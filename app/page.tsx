@@ -1,18 +1,32 @@
 import Link from "next/link";
 import { CalendarX2, HandCoins, MessageSquareShare, UserPlus, Users } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { Notice } from "@/components/Notice";
 import { StatusPill } from "@/components/StatusPill";
 import { requireMember } from "@/lib/auth";
 import { getHomeData } from "@/lib/data";
 import { currency } from "@/lib/utils";
 import { formatMeetingDate } from "@/lib/time";
 
-export default async function HomePage() {
+const savedMessages: Record<string, string> = {
+  attendance: "Non-attendance saved.",
+  referral: "Referral saved.",
+  thankyou: "Thank you saved.",
+  "121": "1-2-1 saved.",
+  visitor: "Visitor saved.",
+};
+
+export default async function HomePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ saved?: string }>;
+}) {
   const member = await requireMember();
-  const data = await getHomeData(member.id);
+  const [data, params] = await Promise.all([getHomeData(member.id), searchParams]);
 
   return (
     <AppShell member={member}>
+      {params.saved && savedMessages[params.saved] ? <Notice tone="success">{savedMessages[params.saved]}</Notice> : null}
       {data.nextMeeting ? (
         <section className="card stack">
           <div>
@@ -86,11 +100,9 @@ export default async function HomePage() {
               {data.assignedSpeaker.deadlinePassed ? " (cutoff passed)" : ""}
             </div>
             <div className="inlineActions">
-              <form action="/rota" style={{ width: "100%" }}>
-                <button className="primaryButton" type="submit">
-                  Manage speaker slot
-                </button>
-              </form>
+              <Link className="primaryButton" href="/rota?my=1">
+                Manage speaker slot
+              </Link>
             </div>
           </div>
         ) : data.coverRequired ? (

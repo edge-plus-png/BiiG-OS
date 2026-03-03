@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MemberRole, SpeakerStatus } from "@prisma/client";
 import { AppShell } from "@/components/AppShell";
+import { Notice } from "@/components/Notice";
 import { StatusPill } from "@/components/StatusPill";
 import {
   adminAssignSpeakerAction,
@@ -13,15 +14,31 @@ import { getMembers, getRotaData } from "@/lib/data";
 export default async function RotaPage({
   searchParams,
 }: {
-  searchParams: Promise<{ showCancelled?: string }>;
+  searchParams: Promise<{ showCancelled?: string; status?: string; my?: string; saved?: string; error?: string }>;
 }) {
   const member = await requireMember();
   const [meetings, members, params] = await Promise.all([getRotaData(), getMembers(), searchParams]);
   const showCancelled = params.showCancelled === "1";
+  const onlyMine = params.my === "1";
+  const filterStatus = params.status ?? "all";
+  const filteredMeetings = meetings
+    .filter((meeting) => showCancelled || !meeting.isCancelled)
+    .filter((meeting) => !onlyMine || meeting.speaker?.memberId === member.id || meeting.speaker?.status === SpeakerStatus.COVER_REQUIRED)
+    .filter((meeting) => {
+      if (filterStatus === "cover") {
+        return meeting.speaker?.status === SpeakerStatus.COVER_REQUIRED;
+      }
+      if (filterStatus === "needs-action") {
+        return !meeting.isCancelled && (!meeting.speaker?.memberId || meeting.speaker.status !== SpeakerStatus.CONFIRMED || meeting.deadlinePassed);
+      }
+      return true;
+    });
 
   return (
     <AppShell member={member}>
       <section className="card stack">
+        {params.saved ? <Notice tone="success">Speaker rota updated.</Notice> : null}
+        {params.error ? <Notice tone="error">{params.error}</Notice> : null}
         <div className="appHeader">
           <div>
             <h1 className="sectionTitle">Speaker rota</h1>
@@ -31,10 +48,22 @@ export default async function RotaPage({
             {showCancelled ? "Hide cancelled" : "Show cancelled"}
           </Link>
         </div>
+        <div className="inlineActions">
+          <Link className="secondaryButton" href="/rota">
+            All
+          </Link>
+          <Link className="secondaryButton" href="/rota?status=needs-action">
+            Needs action
+          </Link>
+          <Link className="secondaryButton" href="/rota?status=cover">
+            Cover needed
+          </Link>
+          <Link className="secondaryButton" href="/rota?my=1">
+            My slots
+          </Link>
+        </div>
         <div className="list">
-          {meetings
-            .filter((meeting) => showCancelled || !meeting.isCancelled)
-            .map((meeting) => (
+          {filteredMeetings.map((meeting) => (
               <div className="listRow" key={meeting.id} style={meeting.isCancelled ? { opacity: 0.6 } : undefined}>
                 <div className="appHeader">
                   <div>
@@ -57,6 +86,9 @@ export default async function RotaPage({
                     Confirm by {meeting.cutoffLabel}
                     {meeting.deadlinePassed && meeting.speaker?.status !== SpeakerStatus.CONFIRMED ? " - cutoff passed" : ""}
                   </div>
+                ) : null}
+                {!meeting.isCancelled && meeting.deadlinePassed && meeting.speaker?.status !== SpeakerStatus.CONFIRMED ? (
+                  <Notice tone="error">Speaker confirmation is overdue for this meeting.</Notice>
                 ) : null}
 
                 {!meeting.isCancelled && meeting.speaker?.memberId === member.id ? (
@@ -140,6 +172,7 @@ export default async function RotaPage({
                 ) : null}
               </div>
             ))}
+          {!filteredMeetings.length ? <div className="muted">No meetings match the current filter.</div> : null}
         </div>
       </section>
     </AppShell>

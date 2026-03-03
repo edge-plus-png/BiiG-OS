@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { Notice } from "@/components/Notice";
 import { StatusPill } from "@/components/StatusPill";
 import { requireAdmin } from "@/lib/auth";
 import { getAdminDashboard } from "@/lib/data";
@@ -9,6 +10,11 @@ import { currency } from "@/lib/utils";
 export default async function AdminPage() {
   const member = await requireAdmin();
   const data = await getAdminDashboard();
+  const overdueSpeakers = data.speakerWindow.filter((speaker) => speaker.status !== "CONFIRMED");
+  const weeklySummaryText = data.nextMeeting
+    ? `BiiG update for ${formatMeetingDate(data.nextMeeting.meetingDate)}: ${data.nextMeeting.nonAttendance.length} apologies, ${data.nextMeeting.nonAttendance.filter((item) => item.hasSub).length} subs, ${data.nextMeeting.visitors.length} visitors expected.`
+    : "BiiG weekly update.";
+  const monthlySummaryText = `BiiG month to date: ${data.metrics.referrals} referrals, ${currency(data.metrics.thankYou)} thank you business, ${data.metrics.visitors} visitors.`;
 
   return (
     <AppShell member={member}>
@@ -41,6 +47,14 @@ export default async function AdminPage() {
             <span className="muted smallText">Visitors</span>
             <span className="metricValue">{data.metrics.visitors}</span>
           </div>
+        </div>
+        <div className="inlineActions">
+          <Link className="secondaryButton" href={`https://wa.me/?text=${encodeURIComponent(weeklySummaryText)}`} target="_blank">
+            Share weekly summary
+          </Link>
+          <Link className="secondaryButton" href={`https://wa.me/?text=${encodeURIComponent(monthlySummaryText)}`} target="_blank">
+            Share month summary
+          </Link>
         </div>
       </section>
 
@@ -101,6 +115,7 @@ export default async function AdminPage() {
 
       <section className="card stack">
         <h2 className="sectionTitle">Next 4 speaker slots</h2>
+        {overdueSpeakers.length ? <Notice tone="error">{overdueSpeakers.length} speaker slot(s) still need confirmation or cover.</Notice> : null}
         <div className="list">
           {data.speakerWindow.map((speaker) => (
             <div key={speaker.id} className="listRow">
@@ -114,6 +129,9 @@ export default async function AdminPage() {
             </div>
           ))}
         </div>
+        <Link className="secondaryButton" href="/rota?status=needs-action">
+          Open rota items needing action
+        </Link>
       </section>
     </AppShell>
   );

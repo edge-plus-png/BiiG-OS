@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/AppShell";
+import { Notice } from "@/components/Notice";
 import { createMemberAction, resetPinAction } from "@/lib/actions";
 import { requireAdmin } from "@/lib/auth";
 import { getMembers } from "@/lib/data";
@@ -7,11 +8,15 @@ import { env } from "@/lib/env";
 export default async function AdminMembersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ pin?: string; created?: string; reset?: string }>;
+  searchParams: Promise<{ pin?: string; created?: string; reset?: string; q?: string }>;
 }) {
   const admin = await requireAdmin();
   const [members, params] = await Promise.all([getMembers(), searchParams]);
   const revealedPin = params.pin;
+  const query = params.q?.trim().toLowerCase() ?? "";
+  const filteredMembers = query
+    ? members.filter((member) => `${member.name} ${member.businessName}`.toLowerCase().includes(query))
+    : members;
 
   return (
     <AppShell member={admin}>
@@ -65,8 +70,19 @@ export default async function AdminMembersPage({
 
       <section className="card stack">
         <h2 className="sectionTitle">Members</h2>
+        <form action="/admin/members" className="formGrid">
+          <label className="label">
+            Search members
+            <input className="input" name="q" defaultValue={params.q ?? ""} placeholder="Name or business" />
+          </label>
+          <button className="secondaryButton" type="submit">
+            Filter
+          </button>
+        </form>
+        {params.created ? <Notice tone="success">Member created and PIN revealed above.</Notice> : null}
+        {params.reset ? <Notice tone="success">PIN reset and revealed above.</Notice> : null}
         <div className="list">
-          {members.map((member) => (
+          {filteredMembers.map((member) => (
             <div key={member.id} className="listRow">
               <div style={{ fontWeight: 700 }}>
                 {member.name} - {member.businessName}
@@ -87,6 +103,7 @@ export default async function AdminMembersPage({
               </form>
             </div>
           ))}
+          {!filteredMembers.length ? <div className="muted">No members match that search.</div> : null}
         </div>
       </section>
     </AppShell>
