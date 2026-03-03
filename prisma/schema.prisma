@@ -1,0 +1,177 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MemberRole {
+  MEMBER
+  ADMIN
+}
+
+enum ReferralStatus {
+  GIVEN
+  CONVERTED
+  LOST
+}
+
+enum SpeakerStatus {
+  AWAITING
+  CONFIRMED
+  COVER_REQUIRED
+}
+
+enum VisitorLikelihood {
+  HIGH
+  MEDIUM
+  LOW
+}
+
+model Member {
+  id               String           @id @default(uuid())
+  name             String
+  businessName     String
+  phone            String?
+  breakfastChoice  String?
+  dietaryNotes     String?
+  pinHash          String
+  role             MemberRole       @default(MEMBER)
+  isActive         Boolean          @default(true)
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  sessions         Session[]
+  referralsGiven   Referral[]       @relation("ReferralFrom")
+  referralsTo      Referral[]       @relation("ReferralTo")
+  thankYousFrom    ThankYou[]       @relation("ThankYouFrom")
+  thankYousTo      ThankYou[]       @relation("ThankYouTo")
+  oneToOnesLow     OneToOne[]       @relation("OneToOneLow")
+  oneToOnesHigh    OneToOne[]       @relation("OneToOneHigh")
+  visitorsAdded    Visitor[]
+  nonAttendance    NonAttendance[]
+  speakers         Speaker[]        @relation("SpeakerAssigned")
+  speakerOverrides Speaker[]        @relation("SpeakerOverride")
+
+  @@unique([name, businessName])
+}
+
+model Meeting {
+  id              String          @id @default(uuid())
+  meetingDate     DateTime        @unique
+  isCancelled     Boolean         @default(false)
+  cancelReason    String?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  speaker         Speaker?
+  nonAttendance   NonAttendance[]
+  referrals       Referral[]
+  visitors        Visitor[]
+}
+
+model Speaker {
+  id           String        @id @default(uuid())
+  meetingId    String        @unique
+  memberId     String?
+  status       SpeakerStatus @default(AWAITING)
+  assignedById String?
+  confirmedAt  DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  meeting      Meeting       @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  member       Member?       @relation("SpeakerAssigned", fields: [memberId], references: [id])
+  assignedBy   Member?       @relation("SpeakerOverride", fields: [assignedById], references: [id])
+}
+
+model NonAttendance {
+  id          String   @id @default(uuid())
+  meetingId   String
+  memberId    String
+  hasSub      Boolean
+  subName     String?
+  createdLate Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  meeting     Meeting  @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+  member      Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingId, memberId])
+}
+
+model Referral {
+  id             String         @id @default(uuid())
+  fromMemberId   String
+  toMemberId     String
+  meetingId      String?
+  leadName       String
+  leadContact    String?
+  notes          String?
+  status         ReferralStatus @default(GIVEN)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  fromMember     Member         @relation("ReferralFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
+  toMember       Member         @relation("ReferralTo", fields: [toMemberId], references: [id], onDelete: Cascade)
+  meeting        Meeting?       @relation(fields: [meetingId], references: [id], onDelete: SetNull)
+  thankYous      ThankYou[]
+}
+
+model ThankYou {
+  id           String   @id @default(uuid())
+  fromMemberId String
+  toMemberId   String
+  referralId   String?
+  amount       Decimal  @db.Decimal(10, 2)
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  fromMember   Member   @relation("ThankYouFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
+  toMember     Member   @relation("ThankYouTo", fields: [toMemberId], references: [id], onDelete: Cascade)
+  referral     Referral? @relation(fields: [referralId], references: [id], onDelete: SetNull)
+}
+
+model OneToOne {
+  id           String   @id @default(uuid())
+  meetingDate  DateTime
+  memberLowId  String
+  memberHighId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  memberLow    Member   @relation("OneToOneLow", fields: [memberLowId], references: [id], onDelete: Cascade)
+  memberHigh   Member   @relation("OneToOneHigh", fields: [memberHighId], references: [id], onDelete: Cascade)
+
+  @@unique([meetingDate, memberLowId, memberHighId])
+}
+
+model Visitor {
+  id              String            @id @default(uuid())
+  addedByMemberId String
+  meetingId       String
+  visitorName     String
+  visitorBusiness String?
+  likelihood      VisitorLikelihood
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  addedByMember   Member            @relation(fields: [addedByMemberId], references: [id], onDelete: Cascade)
+  meeting         Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  memberId   String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  member    Member   @relation(fields: [memberId], references: [id], onDelete: Cascade)
+}
+
+model LoginAttempt {
+  id            String   @id @default(uuid())
+  key           String   @unique
+  count         Int      @default(0)
+  windowStarted DateTime @default(now())
+  blockedUntil  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
