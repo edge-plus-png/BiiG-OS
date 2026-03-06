@@ -98,9 +98,20 @@ export async function GET(request: NextRequest, context: { params: Promise<{ typ
         row.likelihood,
       ]);
       break;
+    case "testimonials":
+      headers = ["Created", "From", "From Business", "To", "To Business", "Notes"];
+      dataRows = rows.map((row: any) => [
+        format(row.createdAt, "yyyy-MM-dd HH:mm"),
+        row.fromMember.name,
+        row.fromMember.businessName,
+        row.toMember.name,
+        row.toMember.businessName,
+        row.notes,
+      ]);
+      break;
     case "monthly_summary":
-      headers = ["Month", "Referrals", "Thank You", "Visitors"];
-      dataRows = rows.map((row: any) => [format(row.month, "yyyy-MM"), row.referrals, row.thank_you, row.visitors]);
+      headers = ["Month", "Referrals", "Thank You", "Visitors", "Testimonials"];
+      dataRows = rows.map((row: any) => [format(row.month, "yyyy-MM"), row.referrals, row.thank_you, row.visitors, row.testimonials]);
       break;
     default:
       return new NextResponse("Unknown export", { status: 404 });
