@@ -5,6 +5,7 @@ import { MemberRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
 import { hashPin, verifyPin } from "@/lib/pin";
+import { createTiming } from "@/lib/timing";
 
 const SESSION_COOKIE = "biig_session";
 const SESSION_TTL_DAYS = 90;
@@ -51,8 +52,10 @@ export async function destroySession() {
 }
 
 export async function getCurrentMember() {
+  const timing = createTiming("get-current-member");
   const store = await cookies();
   const rawToken = store.get(SESSION_COOKIE)?.value;
+  timing.mark("cookies");
 
   if (!rawToken) {
     return null;
@@ -62,6 +65,7 @@ export async function getCurrentMember() {
     where: { token: hashToken(rawToken) },
     include: { member: true },
   });
+  timing.mark("session-query");
 
   if (!session || session.expiresAt < new Date()) {
     if (session) {
@@ -71,6 +75,7 @@ export async function getCurrentMember() {
     return null;
   }
 
+  timing.done();
   return session.member;
 }
 
