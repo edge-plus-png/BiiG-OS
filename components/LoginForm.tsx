@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import { useFormStatus } from "react-dom";
+import { LoaderCircle, Search } from "lucide-react";
 import { loginAction } from "@/lib/actions";
 
 type LoginFormProps = {
@@ -62,10 +63,19 @@ export function LoginForm({ members, error }: LoginFormProps) {
           <input className="input" name="pin" type="password" inputMode="numeric" minLength={4} required />
         </label>
 
-        <button className="primaryButton" type="submit">
-          Log in
-        </button>
+        <LoginButton />
       </form>
     </div>
+  );
+}
+
+function LoginButton() {
+  const { pending } = useFormStatus();
+
+  return (
+    <button className="primaryButton loginButton" type="submit" disabled={pending}>
+      {pending ? <LoaderCircle size={18} className="spin" /> : null}
+      {pending ? "Logging in..." : "Log in"}
+    </button>
   );
 }
