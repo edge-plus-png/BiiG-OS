@@ -247,6 +247,31 @@ export async function saveVisitorAction(formData: FormData) {
   redirect("/?saved=visitor");
 }
 
+export async function saveTestimonialAction(formData: FormData) {
+  const member = await requireMember();
+  const parsed = z
+    .object({
+      toMemberId: z.string().uuid(),
+      notes: z.string().optional(),
+    })
+    .parse({
+      toMemberId: formData.get("toMemberId"),
+      notes: formData.get("notes"),
+    });
+
+  await prisma.testimonial.create({
+    data: {
+      fromMemberId: member.id,
+      toMemberId: parsed.toMemberId,
+      notes: parsed.notes || null,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/?saved=testimonial");
+}
+
 export async function updateSpeakerStatusAction(formData: FormData) {
   const member = await requireMember();
   const parsed = z

@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import Link from "next/link";
-import { CalendarX2, HandCoins, MessageSquareShare, UserPlus, Users } from "lucide-react";
+import { CalendarX2, HandCoins, MessageSquareShare, Quote, UserPlus, Users } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { HomeMetrics, HomeMetricsFallback } from "@/components/home/HomeMetrics";
 import { HomeSpeaker, HomeSpeakerFallback } from "@/components/home/HomeSpeaker";
@@ -17,6 +17,7 @@ const savedMessages: Record<string, string> = {
   thankyou: "Thank you saved.",
   "121": "1-2-1 saved.",
   visitor: "Visitor saved.",
+  testimonial: "Testimonial saved.",
 };
 
 export default async function HomePage({
@@ -78,6 +79,10 @@ export default async function HomePage({
         <Link className="primaryButton" href="/visitors/new">
           <UserPlus size={20} />
           Add a visitor
+        </Link>
+        <Link className="primaryButton" href="/testimonials/new">
+          <Quote size={20} />
+          Give a testimonial
         </Link>
       </section>
 

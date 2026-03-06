@@ -31,9 +31,13 @@ export async function HomeMetrics({ memberId }: { memberId: string }) {
             <span className="muted smallText">Visitors</span>
             <span className="metricValue">{data.metrics.monthToDate.visitors}</span>
           </div>
+          <div className="metricCard">
+            <span className="muted smallText">Testimonials</span>
+            <span className="metricValue">{data.metrics.monthToDate.testimonialsGiven}</span>
+          </div>
         </div>
         <p className="muted smallText" style={{ marginTop: 12 }}>
-          One 1-2-1 entry counts for both members. Referrals are split into passed and received.
+          One 1-2-1 entry counts for both members. Referrals are split into passed and received. Testimonials are giver-only.
         </p>
       </section>
 
@@ -61,6 +65,10 @@ export async function HomeMetrics({ memberId }: { memberId: string }) {
           <div className="metricCard">
             <span className="muted smallText">Visitors</span>
             <span className="metricValue">{data.metrics.yearToDate.visitors}</span>
+          </div>
+          <div className="metricCard">
+            <span className="muted smallText">Testimonials</span>
+            <span className="metricValue">{data.metrics.yearToDate.testimonialsGiven}</span>
           </div>
         </div>
       </section>

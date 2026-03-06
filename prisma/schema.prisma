@@ -54,6 +54,8 @@ model Member {
   nonAttendance    NonAttendance[]
   speakers         Speaker[]        @relation("SpeakerAssigned")
   speakerOverrides Speaker[]        @relation("SpeakerOverride")
+  testimonialsGiven Testimonial[]   @relation("TestimonialFrom")
+  testimonialsTo    Testimonial[]   @relation("TestimonialTo")
 
   @@unique([name, businessName])
 }
@@ -155,6 +157,17 @@ model Visitor {
   updatedAt       DateTime          @updatedAt
   addedByMember   Member            @relation(fields: [addedByMemberId], references: [id], onDelete: Cascade)
   meeting         Meeting           @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+}
+
+model Testimonial {
+  id           String   @id @default(uuid())
+  fromMemberId String
+  toMemberId   String
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  fromMember   Member   @relation("TestimonialFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
+  toMember     Member   @relation("TestimonialTo", fields: [toMemberId], references: [id], onDelete: Cascade)
 }
 
 model Session {
