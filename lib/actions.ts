@@ -17,7 +17,6 @@ import {
 import { verifyPinWithUpgrade, hashPin } from "@/lib/pin";
 import { prisma } from "@/lib/prisma";
 import { nonAttendanceCutoff } from "@/lib/time";
-import { createTiming } from "@/lib/timing";
 
 const loginSchema = z.object({
   memberId: z.string().uuid(),
@@ -25,12 +24,10 @@ const loginSchema = z.object({
 });
 
 export async function loginAction(formData: FormData) {
-  const timing = createTiming("login");
   const parsed = loginSchema.safeParse({
     memberId: formData.get("memberId"),
     pin: formData.get("pin"),
   });
-  timing.mark("parsed");
 
   if (!parsed.success) {
     redirect("/login?error=Enter%20your%20name%20and%20PIN");
@@ -38,18 +35,15 @@ export async function loginAction(formData: FormData) {
 
   const key = `member:${parsed.data.memberId}`;
   const gate = await assertLoginAllowed(key);
-  timing.mark("rate-limit");
   if (!gate.allowed) {
     redirect(`/login?error=${encodeURIComponent(gate.message)}`);
   }
 
   const member = await prisma.member.findUnique({ where: { id: parsed.data.memberId } });
   const verification = member ? await verifyPinWithUpgrade(parsed.data.pin, member.pinHash) : { valid: false, needsUpgrade: false };
-  timing.mark("verify");
 
   if (!member || !verification.valid) {
     await registerFailedLogin(key);
-    timing.mark("failed-login");
     redirect("/login?error=PIN%20not%20recognised");
   }
 
@@ -58,13 +52,10 @@ export async function loginAction(formData: FormData) {
       where: { id: member.id },
       data: { pinHash: await hashPin(parsed.data.pin) },
     });
-    timing.mark("hash-upgrade");
   }
 
   await clearFailedLogins(key);
-  timing.mark("clear-rate-limit");
   await createSession(member.id);
-  timing.done();
   redirect("/");
 }
 

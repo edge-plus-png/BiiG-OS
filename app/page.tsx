@@ -8,7 +8,6 @@ import { Notice } from "@/components/Notice";
 import { StatusPill } from "@/components/StatusPill";
 import { requireMember } from "@/lib/auth";
 import { getHomeHeaderData } from "@/lib/data";
-import { createTiming } from "@/lib/timing";
 import { formatMeetingDate } from "@/lib/time";
 
 const savedMessages: Record<string, string> = {
@@ -25,11 +24,8 @@ export default async function HomePage({
 }: {
   searchParams: Promise<{ saved?: string }>;
 }) {
-  const timing = createTiming("home-page");
   const member = await requireMember();
-  timing.mark("member");
   const [data, params] = await Promise.all([getHomeHeaderData(member.id), searchParams]);
-  timing.done();
 
   return (
     <AppShell member={member}>
