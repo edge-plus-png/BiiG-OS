@@ -14,7 +14,7 @@ import {
   requireAdmin,
   requireMember,
 } from "@/lib/auth";
-import { verifyPin, hashPin } from "@/lib/pin";
+import { verifyPinWithUpgrade, hashPin } from "@/lib/pin";
 import { prisma } from "@/lib/prisma";
 import { nonAttendanceCutoff } from "@/lib/time";
 
@@ -40,9 +40,18 @@ export async function loginAction(formData: FormData) {
   }
 
   const member = await prisma.member.findUnique({ where: { id: parsed.data.memberId } });
-  if (!member || !(await verifyPin(parsed.data.pin, member.pinHash))) {
+  const verification = member ? await verifyPinWithUpgrade(parsed.data.pin, member.pinHash) : { valid: false, needsUpgrade: false };
+
+  if (!member || !verification.valid) {
     await registerFailedLogin(key);
     redirect("/login?error=PIN%20not%20recognised");
+  }
+
+  if (verification.needsUpgrade) {
+    await prisma.member.update({
+      where: { id: member.id },
+      data: { pinHash: await hashPin(parsed.data.pin) },
+    });
   }
 
   await clearFailedLogins(key);
