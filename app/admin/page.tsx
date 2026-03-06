@@ -14,7 +14,7 @@ export default async function AdminPage() {
   const weeklySummaryText = data.nextMeeting
     ? `BiiG update for ${formatMeetingDate(data.nextMeeting.meetingDate)}: ${data.nextMeeting.nonAttendance.length} apologies, ${data.nextMeeting.nonAttendance.filter((item) => item.hasSub).length} subs, ${data.nextMeeting.visitors.length} visitors expected.`
     : "BiiG weekly update.";
-  const monthlySummaryText = `BiiG month to date: ${data.metrics.referrals} referrals, ${data.metrics.oneToOnes} 1-2-1s, ${currency(data.metrics.thankYou)} thank you business, ${data.metrics.visitors} visitors.`;
+  const monthlySummaryText = `BiiG month to date: ${data.metrics.monthToDate.referrals} referrals, ${data.metrics.monthToDate.oneToOnes} 1-2-1s, ${currency(data.metrics.monthToDate.thankYou)} thank you business, ${data.metrics.monthToDate.visitors} visitors.`;
 
   return (
     <AppShell member={member}>
@@ -37,19 +37,41 @@ export default async function AdminPage() {
         <div className="metricRow">
           <div className="metricCard">
             <span className="muted smallText">Referrals</span>
-            <span className="metricValue">{data.metrics.referrals}</span>
+            <span className="metricValue">{data.metrics.monthToDate.referrals}</span>
           </div>
           <div className="metricCard">
             <span className="muted smallText">1-2-1s</span>
-            <span className="metricValue">{data.metrics.oneToOnes}</span>
+            <span className="metricValue">{data.metrics.monthToDate.oneToOnes}</span>
           </div>
           <div className="metricCard">
             <span className="muted smallText">Business</span>
-            <span className="metricValue">{currency(data.metrics.thankYou)}</span>
+            <span className="metricValue">{currency(data.metrics.monthToDate.thankYou)}</span>
           </div>
           <div className="metricCard">
             <span className="muted smallText">Visitors</span>
-            <span className="metricValue">{data.metrics.visitors}</span>
+            <span className="metricValue">{data.metrics.monthToDate.visitors}</span>
+          </div>
+        </div>
+      </section>
+
+      <section className="card stack">
+        <h2 className="sectionTitle">Year to date</h2>
+        <div className="metricRow">
+          <div className="metricCard">
+            <span className="muted smallText">Referrals</span>
+            <span className="metricValue">{data.metrics.yearToDate.referrals}</span>
+          </div>
+          <div className="metricCard">
+            <span className="muted smallText">1-2-1s</span>
+            <span className="metricValue">{data.metrics.yearToDate.oneToOnes}</span>
+          </div>
+          <div className="metricCard">
+            <span className="muted smallText">Business</span>
+            <span className="metricValue">{currency(data.metrics.yearToDate.thankYou)}</span>
+          </div>
+          <div className="metricCard">
+            <span className="muted smallText">Visitors</span>
+            <span className="metricValue">{data.metrics.yearToDate.visitors}</span>
           </div>
         </div>
         <div className="inlineActions">
