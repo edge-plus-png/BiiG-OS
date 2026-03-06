@@ -20,7 +20,36 @@ export async function ensureSchedule() {
   }
 
   globalForSchedule.ensureSchedulePromise = (async () => {
-  const nextFridays = getNextFridays(12);
+    const nextFridays = getNextFridays(12);
+    const latestRequiredMeeting = nextFridays[nextFridays.length - 1];
+    const upcomingMeetings = await prisma.meeting.findMany({
+      where: {
+        meetingDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
+      },
+      orderBy: { meetingDate: "asc" },
+      take: 12,
+      select: {
+        id: true,
+        meetingDate: true,
+        isCancelled: true,
+        speaker: {
+          select: { id: true },
+        },
+      },
+    });
+
+    const hasMeetingCoverage =
+      upcomingMeetings.length >= 12 &&
+      upcomingMeetings[upcomingMeetings.length - 1].meetingDate >= latestRequiredMeeting;
+    const upcomingActiveMeetings = upcomingMeetings.filter((meeting) => !meeting.isCancelled).slice(0, 4);
+    const hasSpeakerCoverage =
+      upcomingActiveMeetings.length >= 4 &&
+      upcomingActiveMeetings.every((meeting) => Boolean(meeting.speaker?.id));
+
+    if (hasMeetingCoverage && hasSpeakerCoverage) {
+      globalForSchedule.ensureScheduleLastRun = Date.now();
+      return;
+    }
 
     for (const meetingDate of nextFridays) {
       await prisma.meeting.upsert({
