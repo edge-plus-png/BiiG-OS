@@ -19,7 +19,7 @@ export async function getNextMeeting() {
   });
 }
 
-export async function getHomeData(memberId: string) {
+export async function getHomeHeaderData(memberId: string) {
   await ensureSchedule();
 
   const nextMeeting = await prisma.meeting.findFirst({
@@ -27,11 +27,16 @@ export async function getHomeData(memberId: string) {
     orderBy: { meetingDate: "asc" },
     include: {
       nonAttendance: { where: { memberId } },
-      speaker: { include: { member: true } },
-      visitors: true,
     },
   });
 
+  return {
+    nextMeeting,
+    attendanceRecord: nextMeeting?.nonAttendance[0] ?? null,
+  };
+}
+
+export async function getHomeMetricsData(memberId: string) {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
@@ -39,7 +44,7 @@ export async function getHomeData(memberId: string) {
   yearStart.setMonth(0, 1);
   yearStart.setHours(0, 0, 0, 0);
 
-  const [monthReferralPassed, monthReferralReceived, monthThankYouReceived, monthVisitors, monthOneToOnes, yearReferralPassed, yearReferralReceived, yearThankYouReceived, yearVisitors, yearOneToOnes, assignedSpeaker, coverRequired] = await Promise.all([
+  const [monthReferralPassed, monthReferralReceived, monthThankYouReceived, monthVisitors, monthOneToOnes, yearReferralPassed, yearReferralReceived, yearThankYouReceived, yearVisitors, yearOneToOnes] = await Promise.all([
     prisma.referral.count({
       where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
     }),
@@ -78,27 +83,9 @@ export async function getHomeData(memberId: string) {
         OR: [{ memberLowId: memberId }, { memberHighId: memberId }],
       },
     }),
-    prisma.speaker.findFirst({
-      where: {
-        memberId,
-        meeting: { meetingDate: { gte: new Date() }, isCancelled: false },
-      },
-      include: { meeting: true, member: true },
-      orderBy: { meeting: { meetingDate: "asc" } },
-    }),
-    prisma.speaker.findFirst({
-      where: {
-        status: SpeakerStatus.COVER_REQUIRED,
-        meeting: { meetingDate: { gte: new Date() }, isCancelled: false },
-      },
-      include: { meeting: true, member: true },
-      orderBy: { meeting: { meetingDate: "asc" } },
-    }),
   ]);
 
   return {
-    nextMeeting,
-    attendanceRecord: nextMeeting?.nonAttendance[0] ?? null,
     metrics: {
       monthToDate: {
         referralsPassed: monthReferralPassed,
@@ -120,6 +107,32 @@ export async function getHomeData(memberId: string) {
       thankYou: "Business shows thank-you received, not thank-you logged.",
       oneToOnes: "A single 1-2-1 entry gives both members credit.",
     },
+  };
+}
+
+export async function getHomeSpeakerData(memberId: string) {
+  await ensureSchedule();
+
+  const [assignedSpeaker, coverRequired] = await Promise.all([
+    prisma.speaker.findFirst({
+      where: {
+        memberId,
+        meeting: { meetingDate: { gte: new Date() }, isCancelled: false },
+      },
+      include: { meeting: true, member: true },
+      orderBy: { meeting: { meetingDate: "asc" } },
+    }),
+    prisma.speaker.findFirst({
+      where: {
+        status: SpeakerStatus.COVER_REQUIRED,
+        meeting: { meetingDate: { gte: new Date() }, isCancelled: false },
+      },
+      include: { meeting: true, member: true },
+      orderBy: { meeting: { meetingDate: "asc" } },
+    }),
+  ]);
+
+  return {
     assignedSpeaker: assignedSpeaker
       ? {
           ...assignedSpeaker,
