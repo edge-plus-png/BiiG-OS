@@ -35,13 +35,19 @@ export async function getHomeData(memberId: string) {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
+  const yearStart = new Date();
+  yearStart.setMonth(0, 1);
+  yearStart.setHours(0, 0, 0, 0);
 
-  const [referralsCount, thankYouAggregate, visitorsCount, oneToOneCount, assignedSpeaker, coverRequired] = await Promise.all([
+  const [monthReferralPassed, monthReferralReceived, monthThankYouReceived, monthVisitors, monthOneToOnes, yearReferralPassed, yearReferralReceived, yearThankYouReceived, yearVisitors, yearOneToOnes, assignedSpeaker, coverRequired] = await Promise.all([
     prisma.referral.count({
       where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
     }),
+    prisma.referral.count({
+      where: { toMemberId: memberId, createdAt: { gte: monthStart } },
+    }),
     prisma.thankYou.aggregate({
-      where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
+      where: { toMemberId: memberId, createdAt: { gte: monthStart } },
       _sum: { amount: true },
     }),
     prisma.visitor.count({
@@ -50,6 +56,25 @@ export async function getHomeData(memberId: string) {
     prisma.oneToOne.count({
       where: {
         meetingDate: { gte: monthStart },
+        OR: [{ memberLowId: memberId }, { memberHighId: memberId }],
+      },
+    }),
+    prisma.referral.count({
+      where: { fromMemberId: memberId, createdAt: { gte: yearStart } },
+    }),
+    prisma.referral.count({
+      where: { toMemberId: memberId, createdAt: { gte: yearStart } },
+    }),
+    prisma.thankYou.aggregate({
+      where: { toMemberId: memberId, createdAt: { gte: yearStart } },
+      _sum: { amount: true },
+    }),
+    prisma.visitor.count({
+      where: { addedByMemberId: memberId, createdAt: { gte: yearStart } },
+    }),
+    prisma.oneToOne.count({
+      where: {
+        meetingDate: { gte: yearStart },
         OR: [{ memberLowId: memberId }, { memberHighId: memberId }],
       },
     }),
@@ -75,10 +100,25 @@ export async function getHomeData(memberId: string) {
     nextMeeting,
     attendanceRecord: nextMeeting?.nonAttendance[0] ?? null,
     metrics: {
-      referrals: referralsCount,
-      thankYou: Number(thankYouAggregate._sum.amount ?? 0),
-      visitors: visitorsCount,
-      oneToOnes: oneToOneCount,
+      monthToDate: {
+        referralsPassed: monthReferralPassed,
+        referralsReceived: monthReferralReceived,
+        thankYouReceived: Number(monthThankYouReceived._sum.amount ?? 0),
+        visitors: monthVisitors,
+        oneToOnes: monthOneToOnes,
+      },
+      yearToDate: {
+        referralsPassed: yearReferralPassed,
+        referralsReceived: yearReferralReceived,
+        thankYouReceived: Number(yearThankYouReceived._sum.amount ?? 0),
+        visitors: yearVisitors,
+        oneToOnes: yearOneToOnes,
+      },
+    },
+    metricDefinitions: {
+      referrals: "Referrals are split into passed and received.",
+      thankYou: "Business shows thank-you received, not thank-you logged.",
+      oneToOnes: "A single 1-2-1 entry gives both members credit.",
     },
     assignedSpeaker: assignedSpeaker
       ? {
@@ -140,22 +180,37 @@ export async function getAdminDashboard() {
   const monthStart = new Date();
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
+  const yearStart = new Date();
+  yearStart.setMonth(0, 1);
+  yearStart.setHours(0, 0, 0, 0);
 
-  const [referrals, thankYou, visitors, oneToOnes] = await Promise.all([
+  const [monthReferrals, monthThankYou, monthVisitors, monthOneToOnes, yearReferrals, yearThankYou, yearVisitors, yearOneToOnes] = await Promise.all([
     prisma.referral.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.thankYou.aggregate({ where: { createdAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.visitor.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.oneToOne.count({ where: { meetingDate: { gte: monthStart } } }),
+    prisma.referral.count({ where: { createdAt: { gte: yearStart } } }),
+    prisma.thankYou.aggregate({ where: { createdAt: { gte: yearStart } }, _sum: { amount: true } }),
+    prisma.visitor.count({ where: { createdAt: { gte: yearStart } } }),
+    prisma.oneToOne.count({ where: { meetingDate: { gte: yearStart } } }),
   ]);
 
   return {
     nextMeeting,
     speakerWindow,
     metrics: {
-      referrals,
-      thankYou: Number(thankYou._sum.amount ?? 0),
-      visitors,
-      oneToOnes,
+      monthToDate: {
+        referrals: monthReferrals,
+        thankYou: Number(monthThankYou._sum.amount ?? 0),
+        visitors: monthVisitors,
+        oneToOnes: monthOneToOnes,
+      },
+      yearToDate: {
+        referrals: yearReferrals,
+        thankYou: Number(yearThankYou._sum.amount ?? 0),
+        visitors: yearVisitors,
+        oneToOnes: yearOneToOnes,
+      },
     },
   };
 }
