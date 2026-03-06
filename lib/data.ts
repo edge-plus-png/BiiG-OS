@@ -36,7 +36,7 @@ export async function getHomeData(memberId: string) {
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
-  const [referralsCount, thankYouAggregate, visitorsCount, assignedSpeaker, coverRequired] = await Promise.all([
+  const [referralsCount, thankYouAggregate, visitorsCount, oneToOneCount, assignedSpeaker, coverRequired] = await Promise.all([
     prisma.referral.count({
       where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
     }),
@@ -46,6 +46,12 @@ export async function getHomeData(memberId: string) {
     }),
     prisma.visitor.count({
       where: { addedByMemberId: memberId, createdAt: { gte: monthStart } },
+    }),
+    prisma.oneToOne.count({
+      where: {
+        meetingDate: { gte: monthStart },
+        OR: [{ memberLowId: memberId }, { memberHighId: memberId }],
+      },
     }),
     prisma.speaker.findFirst({
       where: {
@@ -72,6 +78,7 @@ export async function getHomeData(memberId: string) {
       referrals: referralsCount,
       thankYou: Number(thankYouAggregate._sum.amount ?? 0),
       visitors: visitorsCount,
+      oneToOnes: oneToOneCount,
     },
     assignedSpeaker: assignedSpeaker
       ? {
@@ -134,10 +141,11 @@ export async function getAdminDashboard() {
   monthStart.setDate(1);
   monthStart.setHours(0, 0, 0, 0);
 
-  const [referrals, thankYou, visitors] = await Promise.all([
+  const [referrals, thankYou, visitors, oneToOnes] = await Promise.all([
     prisma.referral.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.thankYou.aggregate({ where: { createdAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.visitor.count({ where: { createdAt: { gte: monthStart } } }),
+    prisma.oneToOne.count({ where: { meetingDate: { gte: monthStart } } }),
   ]);
 
   return {
@@ -147,6 +155,7 @@ export async function getAdminDashboard() {
       referrals,
       thankYou: Number(thankYou._sum.amount ?? 0),
       visitors,
+      oneToOnes,
     },
   };
 }

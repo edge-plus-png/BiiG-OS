@@ -56,6 +56,10 @@ export default async function HomePage({
             <span className="metricValue">{data.metrics.referrals}</span>
           </div>
           <div className="metricCard">
+            <span className="muted smallText">1-2-1s</span>
+            <span className="metricValue">{data.metrics.oneToOnes}</span>
+          </div>
+          <div className="metricCard">
             <span className="muted smallText">Business</span>
             <span className="metricValue">{currency(data.metrics.thankYou)}</span>
           </div>
