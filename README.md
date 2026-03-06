@@ -22,6 +22,7 @@ cp .env.example .env.local
 Required variables:
 
 - `DATABASE_URL`: Postgres connection string for Neon, Supabase, or equivalent
+- `DIRECT_URL`: direct Postgres connection string for Prisma CLI and migrations when using Neon pooling
 - `APP_URL`: local or deployed app URL
 - `SESSION_SECRET`: long random secret used to hash session tokens
 - `SEED_ADMIN_PIN`: optional seed PIN for the sample admin account
@@ -45,6 +46,11 @@ Create the database schema:
 ```bash
 npx prisma migrate dev --name init
 ```
+
+If you are using Neon, set:
+
+- `DATABASE_URL` to the pooled `-pooler` connection string for runtime
+- `DIRECT_URL` to the direct non-pooler connection string for Prisma migrations and CLI commands
 
 Seed starter members and upcoming meetings:
 
