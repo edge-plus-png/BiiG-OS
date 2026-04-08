@@ -8,6 +8,7 @@ const exportTypes = [
   { value: "one_to_one", label: "1-2-1s" },
   { value: "visitors", label: "Visitors" },
   { value: "testimonials", label: "Testimonials" },
+  { value: "introductions", label: "Introductions" },
   { value: "monthly_summary", label: "Monthly summary" },
 ];
 

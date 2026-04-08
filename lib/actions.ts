@@ -263,6 +263,40 @@ export async function saveTestimonialAction(formData: FormData) {
   redirect("/?saved=testimonial");
 }
 
+export async function saveIntroductionAction(formData: FormData) {
+  const member = await requireMember();
+  const parsed = z
+    .object({
+      toMemberId: z.string().uuid(),
+      contactName: z.string().min(1),
+      contactCompany: z.string().optional(),
+      notes: z.string().optional(),
+      status: z.enum(["MADE", "MEETING_BOOKED", "OPPORTUNITY_CREATED"]).default("MADE"),
+    })
+    .parse({
+      toMemberId: formData.get("toMemberId"),
+      contactName: formData.get("contactName"),
+      contactCompany: formData.get("contactCompany"),
+      notes: formData.get("notes"),
+      status: formData.get("status") || "MADE",
+    });
+
+  await prisma.introduction.create({
+    data: {
+      fromMemberId: member.id,
+      toMemberId: parsed.toMemberId,
+      contactName: parsed.contactName,
+      contactCompany: parsed.contactCompany || null,
+      notes: parsed.notes || null,
+      status: parsed.status,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/admin");
+  redirect("/?saved=introduction");
+}
+
 export async function updateSpeakerStatusAction(formData: FormData) {
   const member = await requireMember();
   const parsed = z

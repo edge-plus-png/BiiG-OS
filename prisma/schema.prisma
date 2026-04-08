@@ -56,6 +56,8 @@ model Member {
   speakerOverrides Speaker[]        @relation("SpeakerOverride")
   testimonialsGiven Testimonial[]   @relation("TestimonialFrom")
   testimonialsTo    Testimonial[]   @relation("TestimonialTo")
+  introductionsGiven Introduction[] @relation("IntroductionFrom")
+  introductionsTo    Introduction[] @relation("IntroductionTo")
 
   @@unique([name, businessName])
 }
@@ -168,6 +170,20 @@ model Testimonial {
   updatedAt    DateTime @updatedAt
   fromMember   Member   @relation("TestimonialFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
   toMember     Member   @relation("TestimonialTo", fields: [toMemberId], references: [id], onDelete: Cascade)
+}
+
+model Introduction {
+  id             String   @id @default(uuid())
+  fromMemberId   String
+  toMemberId     String
+  contactName    String
+  contactCompany String?
+  notes          String?
+  status         String   @default("MADE")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  fromMember     Member   @relation("IntroductionFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
+  toMember       Member   @relation("IntroductionTo", fields: [toMemberId], references: [id], onDelete: Cascade)
 }
 
 model Session {
