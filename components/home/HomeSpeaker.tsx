@@ -5,10 +5,15 @@ import { formatMeetingDate } from "@/lib/time";
 
 export async function HomeSpeaker({ memberId }: { memberId: string }) {
   const data = await getHomeSpeakerData(memberId);
+  const title = data.assignedSpeaker
+    ? "Your next speaker slot"
+    : data.coverRequired
+      ? "Cover needed"
+      : "Speaker";
 
   return (
     <section className="card stack">
-      <h2 className="sectionTitle">Speaker</h2>
+      <h2 className="sectionTitle">{title}</h2>
       {data.assignedSpeaker ? (
         <div className="listRow">
           <div style={{ fontWeight: 700 }}>{formatMeetingDate(data.assignedSpeaker.meeting.meetingDate)}</div>
@@ -27,6 +32,9 @@ export async function HomeSpeaker({ memberId }: { memberId: string }) {
         <div className="listRow">
           <StatusPill status={data.coverRequired.status} />
           <div style={{ fontWeight: 700 }}>Cover needed on {formatMeetingDate(data.coverRequired.meeting.meetingDate)}</div>
+          <div className="muted smallText">
+            Another member has marked this slot as cover required.
+          </div>
           <Link
             className="primaryButton"
             href={`https://wa.me/?text=${encodeURIComponent(
@@ -41,7 +49,7 @@ export async function HomeSpeaker({ memberId }: { memberId: string }) {
           </Link>
         </div>
       ) : (
-        <p className="muted">No speaker action needed right now.</p>
+        <p className="muted">No speaker action needed right now. Your next slot will show here.</p>
       )}
     </section>
   );
