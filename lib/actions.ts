@@ -282,14 +282,12 @@ export async function saveIntroductionAction(formData: FormData) {
       contactName: z.string().min(1),
       contactCompany: z.string().optional(),
       notes: z.string().optional(),
-      status: z.enum(["MADE", "MEETING_BOOKED", "OPPORTUNITY_CREATED"]).default("MADE"),
     })
     .parse({
       toMemberId: formData.get("toMemberId"),
       contactName: formData.get("contactName"),
       contactCompany: formData.get("contactCompany"),
       notes: formData.get("notes"),
-      status: formData.get("status") || "MADE",
     });
 
   await prisma.introduction.create({
@@ -299,7 +297,6 @@ export async function saveIntroductionAction(formData: FormData) {
       contactName: parsed.contactName,
       contactCompany: parsed.contactCompany || null,
       notes: parsed.notes || null,
-      status: parsed.status,
     },
   });
 
