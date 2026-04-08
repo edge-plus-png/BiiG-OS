@@ -46,7 +46,7 @@ button {
 .pageShell {
   width: min(100%, 720px);
   margin: 0 auto;
-  padding: 20px 16px 40px;
+  padding: 20px 16px 104px;
 }
 
 .stack {
@@ -116,22 +116,58 @@ button {
   gap: 12px;
 }
 
-.navRow {
+.headerMeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headerIconButton {
+  width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 14px;
+}
+
+.appNav {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 8px;
+  padding: 8px;
+  border: 1px solid rgba(11, 84, 163, 0.12);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 30px rgba(11, 84, 163, 0.14);
+  position: sticky;
+  top: 12px;
+  z-index: 20;
 }
 
-.navForm {
-  display: contents;
+.appNavItem {
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  min-height: 58px;
+  padding: 10px 8px;
+  border-radius: 14px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  transition: background 140ms ease, color 140ms ease, transform 140ms ease;
 }
 
-.navButton {
-  min-height: 44px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: 0.95rem;
-  box-shadow: none;
+.appNavItem:hover {
+  background: rgba(11, 84, 163, 0.08);
+  color: var(--brand);
+  transform: translateY(-1px);
+}
+
+.appNavItemActive {
+  background: linear-gradient(180deg, #0b54a3, #08488d);
+  color: white;
+  box-shadow: 0 10px 18px rgba(11, 84, 163, 0.22);
 }
 
 .chip,
@@ -436,12 +472,26 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .navRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .actionGrid {
     grid-template-columns: 1fr;
+  }
+
+  .pageShell {
+    padding-bottom: 118px;
+  }
+
+  .appNav {
+    position: fixed;
+    left: max(12px, env(safe-area-inset-left));
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    top: auto;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .appNavItem {
+    min-height: 56px;
+    font-size: 0.72rem;
   }
 
   .heroHeader {
