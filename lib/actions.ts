@@ -388,36 +388,51 @@ export async function adminAssignSpeakerAction(formData: FormData) {
   const parsed = z
     .object({
       meetingId: z.string().uuid(),
-      memberId: z.string().uuid().optional(),
+      assignee: z.string(),
+      note: z.string().optional(),
     })
     .parse({
       meetingId: formData.get("meetingId"),
-      memberId: formData.get("memberId") || undefined,
+      assignee: formData.get("assignee"),
+      note: formData.get("note"),
     });
 
-  const meeting = await prisma.meeting.findUniqueOrThrow({
-    where: { id: parsed.meetingId },
-    select: { isCancelled: true, meetingType: true },
-  });
+  const isNoMeeting = parsed.assignee === "__NONE__";
+  const isInternalMeeting = parsed.assignee === "__INTERNAL__";
+  const memberId = !parsed.assignee || isNoMeeting || isInternalMeeting ? null : z.string().uuid().parse(parsed.assignee);
 
-  if (meeting.isCancelled || meeting.meetingType !== MeetingType.STANDARD) {
-    redirect("/rota?error=Speakers%20can%20only%20be%20assigned%20to%20standard%20meeting%20weeks");
-  }
+  await prisma.$transaction(async (tx) => {
+    await tx.meeting.update({
+      where: { id: parsed.meetingId },
+      data: {
+        isCancelled: isNoMeeting,
+        meetingType: isInternalMeeting ? MeetingType.INTERNAL : MeetingType.STANDARD,
+        cancelReason: isNoMeeting || isInternalMeeting ? parsed.note || null : null,
+      },
+    });
 
-  await prisma.speaker.upsert({
-    where: { meetingId: parsed.meetingId },
-    create: {
-      meetingId: parsed.meetingId,
-      memberId: parsed.memberId ?? null,
-      assignedById: admin.id,
-      status: parsed.memberId ? SpeakerStatus.AWAITING : SpeakerStatus.AWAITING,
-    },
-    update: {
-      memberId: parsed.memberId ?? null,
-      assignedById: admin.id,
-      status: parsed.memberId ? SpeakerStatus.AWAITING : SpeakerStatus.AWAITING,
-      confirmedAt: null,
-    },
+    if (isNoMeeting || isInternalMeeting) {
+      await tx.speaker.deleteMany({
+        where: { meetingId: parsed.meetingId },
+      });
+      return;
+    }
+
+    await tx.speaker.upsert({
+      where: { meetingId: parsed.meetingId },
+      create: {
+        meetingId: parsed.meetingId,
+        memberId,
+        assignedById: admin.id,
+        status: SpeakerStatus.AWAITING,
+      },
+      update: {
+        memberId,
+        assignedById: admin.id,
+        status: SpeakerStatus.AWAITING,
+        confirmedAt: null,
+      },
+    });
   });
 
   revalidatePath("/rota");
