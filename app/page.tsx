@@ -31,49 +31,49 @@ export default async function HomePage({
     {
       href: "/attendance/new",
       title: "Not attending",
-      description: "Log an apology and optional sub in a few taps.",
+      description: "Apology or sub",
       icon: CalendarX2,
       tone: "danger",
     },
     {
       href: "/referrals/new",
       title: "Pass a referral",
-      description: "Capture the lead while it is still fresh.",
+      description: "New lead",
       icon: MessageSquareShare,
       tone: "primary",
     },
     {
       href: "/thank-you/new",
       title: "Thank you for business",
-      description: "Record the value received from a referral.",
+      description: "Business received",
       icon: HandCoins,
       tone: "primary",
     },
     {
       href: "/one-to-ones/new",
       title: "Log a 1-2-1",
-      description: "Track the meetings that drive future referrals.",
+      description: "Meeting logged",
       icon: Users,
       tone: "secondary",
     },
     {
       href: "/visitors/new",
       title: "Add a visitor",
-      description: "Log who is coming and how likely they are.",
+      description: "Expected guest",
       icon: UserPlus,
       tone: "secondary",
     },
     {
       href: "/testimonials/new",
       title: "Give a testimonial",
-      description: "Record who you backed publicly this week.",
+      description: "Backing given",
       icon: Quote,
       tone: "secondary",
     },
     {
       href: "/introductions/new",
       title: "Make an introduction",
-      description: "Track a useful contact connection for another member.",
+      description: "Useful contact",
       icon: Link2,
       tone: "secondary",
     },
@@ -112,8 +112,8 @@ export default async function HomePage({
 
       <section className="card stack">
         <div>
-          <h2 className="sectionTitle">Quick actions</h2>
-          <p className="muted smallText">Capture the key weekly activity in under ten seconds.</p>
+          <h2 className="sectionTitle">Log something</h2>
+          <p className="muted smallText">Quickest path to capture this week&apos;s activity.</p>
         </div>
         <div className="actionGrid">
           {actionCards.map((action) => {
@@ -134,15 +134,17 @@ export default async function HomePage({
         </div>
       </section>
 
-      <Suspense fallback={<HomeSpeakerFallback />}>
-        <HomeSpeaker memberId={member.id} />
-      </Suspense>
+      <div className="grid2 homeFooterGrid">
+        <Suspense fallback={<HomeSpeakerFallback />}>
+          <HomeSpeaker memberId={member.id} />
+        </Suspense>
 
-      <section className="card stack breakfastCard">
-        <h2 className="sectionTitle">Breakfast</h2>
-        <div>{member.breakfastChoice || "Not set"}</div>
-        {member.dietaryNotes ? <div className="muted smallText">{member.dietaryNotes}</div> : null}
-      </section>
+        <section className="card stack breakfastCard">
+          <h2 className="sectionTitle">Breakfast</h2>
+          <div>{member.breakfastChoice || "Not set"}</div>
+          {member.dietaryNotes ? <div className="muted smallText">{member.dietaryNotes}</div> : null}
+        </section>
+      </div>
     </AppShell>
   );
 }
