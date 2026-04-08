@@ -5,7 +5,6 @@ import { Notice } from "@/components/Notice";
 import { StatusPill } from "@/components/StatusPill";
 import {
   adminAssignSpeakerAction,
-  adminToggleMeetingCancelledAction,
   updateSpeakerStatusAction,
 } from "@/lib/actions";
 import { requireMember } from "@/lib/auth";
@@ -146,46 +145,31 @@ export default async function RotaPage({
 
                 {member.role === MemberRole.ADMIN ? (
                   <>
-                    {meeting.meetingType === MeetingType.STANDARD && !meeting.isCancelled ? (
-                      <form action={adminAssignSpeakerAction} className="formGrid">
-                        <input type="hidden" name="meetingId" value={meeting.id} />
-                        <label className="label">
-                          Assign speaker
-                          <select className="select" name="memberId" defaultValue={meeting.speaker?.memberId ?? ""}>
-                            <option value="">Unassigned</option>
-                            {members.map((item) => (
-                              <option key={item.id} value={item.id}>
-                                {item.name} - {item.businessName}
-                              </option>
-                            ))}
-                          </select>
-                        </label>
-                        <button className="secondaryButton" type="submit">
-                          Save speaker
-                        </button>
-                      </form>
-                    ) : null}
-
-                    <form action={adminToggleMeetingCancelledAction} className="formGrid">
+                    <form action={adminAssignSpeakerAction} className="formGrid">
                       <input type="hidden" name="meetingId" value={meeting.id} />
                       <label className="label">
-                        Week type
+                        Assign speaker
                         <select
                           className="select"
-                          name="weekMode"
-                          defaultValue={meeting.isCancelled ? "none" : meeting.meetingType === MeetingType.INTERNAL ? "internal" : "standard"}
+                          name="assignee"
+                          defaultValue={meeting.isCancelled ? "__NONE__" : meeting.meetingType === MeetingType.INTERNAL ? "__INTERNAL__" : meeting.speaker?.memberId ?? ""}
                         >
-                          <option value="standard">Standard meeting</option>
-                          <option value="internal">Internal BiiG meeting</option>
-                          <option value="none">No meeting</option>
+                          <option value="">Unassigned</option>
+                          <option value="__NONE__">No meeting</option>
+                          <option value="__INTERNAL__">Internal BiiG meeting</option>
+                          {members.map((item) => (
+                            <option key={item.id} value={item.id}>
+                              {item.name} - {item.businessName}
+                            </option>
+                          ))}
                         </select>
                       </label>
                       <label className="label">
                         Note
-                        <input className="input" name="cancelReason" defaultValue={meeting.cancelReason ?? ""} placeholder="Bank holiday, strategy session, etc." />
+                        <input className="input" name="note" defaultValue={meeting.cancelReason ?? ""} placeholder="Bank holiday, strategy session, etc." />
                       </label>
                       <button className="secondaryButton" type="submit">
-                        Save week type
+                        Save
                       </button>
                     </form>
                   </>
