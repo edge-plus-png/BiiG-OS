@@ -26,25 +26,25 @@ export function AppShell({ member, children }: AppShellProps) {
 
       {member ? (
         <nav className="navRow">
-          <Link className="secondaryButton" href="/">
+          <Link className="secondaryButton navButton" href="/">
             Home
           </Link>
-          <Link className="secondaryButton" href="/rota">
+          <Link className="secondaryButton navButton" href="/rota">
             Speaker rota
           </Link>
-          <Link className="secondaryButton" href="/activity">
+          <Link className="secondaryButton navButton" href="/activity">
             My activity
           </Link>
-          <Link className="secondaryButton" href="/pin">
+          <Link className="secondaryButton navButton" href="/pin">
             My PIN
           </Link>
           {member.role === MemberRole.ADMIN ? (
-            <Link className="secondaryButton" href="/admin">
+            <Link className="secondaryButton navButton" href="/admin">
               Admin
             </Link>
           ) : null}
-          <form action={logoutAction} style={{ width: "100%" }}>
-            <button className="secondaryButton" type="submit">
+          <form action={logoutAction} className="navForm">
+            <button className="secondaryButton navButton" type="submit">
               <LogOut size={18} />
               Log out
             </button>
