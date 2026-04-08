@@ -290,6 +290,10 @@ button {
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+.activitySummaryRow .metricValue {
+  font-size: 1.15rem;
+}
+
 .inlineActions {
   display: flex;
   flex-wrap: wrap;

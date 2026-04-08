@@ -321,6 +321,22 @@ export async function getExportRows(range: { from?: Date; to?: Date }, type: str
 }
 
 export async function getMemberActivityData(memberId: string) {
+  return getMemberActivityDataWithFilters(memberId, {});
+}
+
+export async function getMemberActivityDataWithFilters(
+  memberId: string,
+  filters: { from?: Date; to?: Date } = {},
+) {
+  const createdAt = {
+    gte: filters.from,
+    lte: filters.to,
+  };
+  const meetingDate = {
+    gte: filters.from,
+    lte: filters.to,
+  };
+
   const [
     member,
     referralsGiven,
@@ -338,31 +354,32 @@ export async function getMemberActivityData(memberId: string) {
       select: { id: true, name: true, businessName: true },
     }),
     prisma.referral.findMany({
-      where: { fromMemberId: memberId },
+      where: { fromMemberId: memberId, createdAt },
       include: { toMember: true },
       orderBy: { createdAt: "desc" },
       take: 25,
     }),
     prisma.referral.findMany({
-      where: { toMemberId: memberId },
+      where: { toMemberId: memberId, createdAt },
       include: { fromMember: true },
       orderBy: { createdAt: "desc" },
       take: 25,
     }),
     prisma.thankYou.findMany({
-      where: { fromMemberId: memberId },
+      where: { fromMemberId: memberId, createdAt },
       include: { toMember: true, referral: true },
       orderBy: { createdAt: "desc" },
       take: 25,
     }),
     prisma.thankYou.findMany({
-      where: { toMemberId: memberId },
+      where: { toMemberId: memberId, createdAt },
       include: { fromMember: true, referral: true },
       orderBy: { createdAt: "desc" },
       take: 25,
     }),
     prisma.oneToOne.findMany({
       where: {
+        meetingDate,
         OR: [{ memberLowId: memberId }, { memberHighId: memberId }],
       },
       include: { memberLow: true, memberHigh: true },
@@ -370,25 +387,25 @@ export async function getMemberActivityData(memberId: string) {
       take: 25,
     }),
     prisma.visitor.findMany({
-      where: { addedByMemberId: memberId },
+      where: { addedByMemberId: memberId, createdAt },
       include: { meeting: true },
       orderBy: { createdAt: "desc" },
       take: 25,
     }),
     prisma.testimonial.findMany({
-      where: { fromMemberId: memberId },
+      where: { fromMemberId: memberId, createdAt },
       include: { toMember: true },
       orderBy: { createdAt: "desc" },
       take: 25,
     }),
     prisma.testimonial.findMany({
-      where: { toMemberId: memberId },
+      where: { toMemberId: memberId, createdAt },
       include: { fromMember: true },
       orderBy: { createdAt: "desc" },
       take: 25,
     }),
     prisma.introduction.findMany({
-      where: { fromMemberId: memberId },
+      where: { fromMemberId: memberId, createdAt },
       include: { toMember: true },
       orderBy: { createdAt: "desc" },
       take: 25,
@@ -418,5 +435,9 @@ export async function getMemberActivityData(memberId: string) {
     testimonialsGiven,
     testimonialsReceived,
     introductionsGiven,
+    filters: {
+      from: filters.from ?? null,
+      to: filters.to ?? null,
+    },
   };
 }
