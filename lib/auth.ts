@@ -1,10 +1,10 @@
-import { randomBytes, createHash } from "crypto";
+import { createHash, createHmac } from "crypto";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { MemberRole } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { env } from "@/lib/env";
-import { hashPin, verifyPin } from "@/lib/pin";
+import { hashPin } from "@/lib/pin";
 
 const SESSION_COOKIE = "biig_session";
 const SESSION_TTL_DAYS = 90;
@@ -16,18 +16,35 @@ function hashToken(token: string) {
   return createHash("sha256").update(`${token}:${env.SESSION_SECRET}`).digest("hex");
 }
 
-export async function createSession(memberId: string) {
-  const rawToken = randomBytes(32).toString("hex");
-  const token = hashToken(rawToken);
-  const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
+function signSession(memberId: string, expiresAt: Date) {
+  const payload = `${memberId}.${expiresAt.getTime()}`;
+  const signature = createHmac("sha256", env.SESSION_SECRET).update(payload).digest("hex");
+  return `${payload}.${signature}`;
+}
 
-  await prisma.session.create({
-    data: {
-      memberId,
-      token,
-      expiresAt,
-    },
-  });
+function parseSignedSession(rawToken: string) {
+  const [memberId, expiry, signature] = rawToken.split(".");
+  if (!memberId || !expiry || !signature) {
+    return null;
+  }
+
+  const payload = `${memberId}.${expiry}`;
+  const expected = createHmac("sha256", env.SESSION_SECRET).update(payload).digest("hex");
+  if (expected !== signature) {
+    return null;
+  }
+
+  const expiresAt = new Date(Number(expiry));
+  if (Number.isNaN(expiresAt.getTime())) {
+    return null;
+  }
+
+  return { memberId, expiresAt };
+}
+
+export async function createSession(memberId: string) {
+  const expiresAt = new Date(Date.now() + SESSION_TTL_DAYS * 24 * 60 * 60 * 1000);
+  const rawToken = signSession(memberId, expiresAt);
 
   const store = await cookies();
   store.set(SESSION_COOKIE, rawToken, {
@@ -43,7 +60,7 @@ export async function destroySession() {
   const store = await cookies();
   const token = store.get(SESSION_COOKIE)?.value;
 
-  if (token) {
+  if (token && !parseSignedSession(token)) {
     await prisma.session.deleteMany({ where: { token: hashToken(token) } });
   }
 
@@ -56,6 +73,18 @@ export async function getCurrentMember() {
 
   if (!rawToken) {
     return null;
+  }
+
+  const signedSession = parseSignedSession(rawToken);
+  if (signedSession) {
+    if (signedSession.expiresAt < new Date()) {
+      store.delete(SESSION_COOKIE);
+      return null;
+    }
+
+    return prisma.member.findFirst({
+      where: { id: signedSession.memberId, isActive: true },
+    });
   }
 
   const session = await prisma.session.findUnique({

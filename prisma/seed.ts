@@ -12,18 +12,21 @@ async function main() {
     {
       name: "Alex Carter",
       businessName: "Carter Financial",
+      email: "alex@example.com",
       breakfastChoice: "Full English",
       role: MemberRole.ADMIN,
     },
     {
       name: "Priya Singh",
       businessName: "Singh Legal",
+      email: "priya@example.com",
       breakfastChoice: "Vegetarian",
       role: MemberRole.MEMBER,
     },
     {
       name: "Tom Harris",
       businessName: "Harris Build",
+      email: "tom@example.com",
       breakfastChoice: "No breakfast",
       role: MemberRole.MEMBER,
     },
