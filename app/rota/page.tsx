@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MemberRole, SpeakerStatus } from "@prisma/client";
+import { MemberRole, MeetingType, SpeakerStatus } from "@prisma/client";
 import { AppShell } from "@/components/AppShell";
 import { Notice } from "@/components/Notice";
 import { StatusPill } from "@/components/StatusPill";
@@ -29,7 +29,11 @@ export default async function RotaPage({
         return meeting.speaker?.status === SpeakerStatus.COVER_REQUIRED;
       }
       if (filterStatus === "needs-action") {
-        return !meeting.isCancelled && (!meeting.speaker?.memberId || meeting.speaker.status !== SpeakerStatus.CONFIRMED || meeting.deadlinePassed);
+        return (
+          !meeting.isCancelled &&
+          meeting.meetingType === MeetingType.STANDARD &&
+          (!meeting.speaker?.memberId || meeting.speaker.status !== SpeakerStatus.CONFIRMED || meeting.deadlinePassed)
+        );
       }
       return true;
     });
@@ -68,30 +72,39 @@ export default async function RotaPage({
                 <div className="appHeader">
                   <div>
                     <div style={{ fontWeight: 800 }}>{meeting.displayDate}</div>
-                    {meeting.speaker?.member ? (
+                    {meeting.isCancelled ? (
+                      <div className="muted">No meeting this week</div>
+                    ) : meeting.meetingType === MeetingType.INTERNAL ? (
+                      <div className="muted">Internal BiiG meeting</div>
+                    ) : meeting.speaker?.member ? (
                       <div>{meeting.speaker.member.name} - {meeting.speaker.member.businessName}</div>
                     ) : (
                       <div className="muted">(Unassigned)</div>
                     )}
                   </div>
                   {meeting.isCancelled ? (
-                    <span className="chip">{meeting.cancelReason || "Cancelled"}</span>
+                    <span className="chip">{meeting.cancelReason || "No meeting"}</span>
+                  ) : meeting.meetingType === MeetingType.INTERNAL ? (
+                    <span className="chip">{meeting.cancelReason || "Internal BiiG meeting"}</span>
                   ) : (
                     <StatusPill status={meeting.speaker?.status ?? SpeakerStatus.AWAITING} />
                   )}
                 </div>
 
-                {!meeting.isCancelled ? (
+                {!meeting.isCancelled && meeting.meetingType === MeetingType.STANDARD ? (
                   <div className="muted smallText">
                     Confirm by {meeting.cutoffLabel}
                     {meeting.deadlinePassed && meeting.speaker?.status !== SpeakerStatus.CONFIRMED ? " - cutoff passed" : ""}
                   </div>
                 ) : null}
-                {!meeting.isCancelled && meeting.deadlinePassed && meeting.speaker?.status !== SpeakerStatus.CONFIRMED ? (
+                {!meeting.isCancelled && meeting.meetingType === MeetingType.INTERNAL ? (
+                  <div className="muted smallText">Internal BiiG meeting. No speaker slot needed.</div>
+                ) : null}
+                {!meeting.isCancelled && meeting.meetingType === MeetingType.STANDARD && meeting.deadlinePassed && meeting.speaker?.status !== SpeakerStatus.CONFIRMED ? (
                   <Notice tone="error">Speaker confirmation is overdue for this meeting.</Notice>
                 ) : null}
 
-                {!meeting.isCancelled && meeting.speaker?.memberId === member.id ? (
+                {!meeting.isCancelled && meeting.meetingType === MeetingType.STANDARD && meeting.speaker?.memberId === member.id ? (
                   <div className="inlineActions">
                     <form action={updateSpeakerStatusAction}>
                       <input type="hidden" name="speakerId" value={meeting.speaker.id} />
@@ -110,7 +123,7 @@ export default async function RotaPage({
                   </div>
                 ) : null}
 
-                {!meeting.isCancelled && meeting.speaker?.status === SpeakerStatus.COVER_REQUIRED ? (
+                {!meeting.isCancelled && meeting.meetingType === MeetingType.STANDARD && meeting.speaker?.status === SpeakerStatus.COVER_REQUIRED ? (
                   <div className="inlineActions">
                     <form action={updateSpeakerStatusAction}>
                       <input type="hidden" name="speakerId" value={meeting.speaker.id} />
@@ -133,39 +146,46 @@ export default async function RotaPage({
 
                 {member.role === MemberRole.ADMIN ? (
                   <>
-                    <form action={adminAssignSpeakerAction} className="formGrid">
-                      <input type="hidden" name="meetingId" value={meeting.id} />
-                      <label className="label">
-                        Assign speaker
-                        <select className="select" name="memberId" defaultValue={meeting.speaker?.memberId ?? ""}>
-                          <option value="">Unassigned</option>
-                          {members.map((item) => (
-                            <option key={item.id} value={item.id}>
-                              {item.name} - {item.businessName}
-                            </option>
-                          ))}
-                        </select>
-                      </label>
-                      <button className="secondaryButton" type="submit">
-                        Save speaker
-                      </button>
-                    </form>
+                    {meeting.meetingType === MeetingType.STANDARD && !meeting.isCancelled ? (
+                      <form action={adminAssignSpeakerAction} className="formGrid">
+                        <input type="hidden" name="meetingId" value={meeting.id} />
+                        <label className="label">
+                          Assign speaker
+                          <select className="select" name="memberId" defaultValue={meeting.speaker?.memberId ?? ""}>
+                            <option value="">Unassigned</option>
+                            {members.map((item) => (
+                              <option key={item.id} value={item.id}>
+                                {item.name} - {item.businessName}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <button className="secondaryButton" type="submit">
+                          Save speaker
+                        </button>
+                      </form>
+                    ) : null}
 
                     <form action={adminToggleMeetingCancelledAction} className="formGrid">
                       <input type="hidden" name="meetingId" value={meeting.id} />
                       <label className="label">
-                        Week status
-                        <select className="select" name="isCancelled" defaultValue={meeting.isCancelled ? "true" : "false"}>
-                          <option value="false">Active meeting</option>
-                          <option value="true">Cancelled week</option>
+                        Week type
+                        <select
+                          className="select"
+                          name="weekMode"
+                          defaultValue={meeting.isCancelled ? "none" : meeting.meetingType === MeetingType.INTERNAL ? "internal" : "standard"}
+                        >
+                          <option value="standard">Standard meeting</option>
+                          <option value="internal">Internal BiiG meeting</option>
+                          <option value="none">No meeting</option>
                         </select>
                       </label>
                       <label className="label">
-                        Cancel reason
-                        <input className="input" name="cancelReason" defaultValue={meeting.cancelReason ?? ""} />
+                        Note
+                        <input className="input" name="cancelReason" defaultValue={meeting.cancelReason ?? ""} placeholder="Bank holiday, strategy session, etc." />
                       </label>
                       <button className="secondaryButton" type="submit">
-                        Save week
+                        Save week type
                       </button>
                     </form>
                   </>

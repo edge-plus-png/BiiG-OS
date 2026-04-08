@@ -1,4 +1,4 @@
-import { Prisma, SpeakerStatus } from "@prisma/client";
+import { MeetingType, Prisma, SpeakerStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ensureSchedule } from "@/lib/schedule";
 import { formatMeetingDate, hasCutoffPassed, nonAttendanceCutoff, speakerConfirmCutoff } from "@/lib/time";
@@ -133,7 +133,7 @@ export async function getHomeSpeakerData(memberId: string) {
     prisma.speaker.findFirst({
       where: {
         memberId,
-        meeting: { meetingDate: { gte: new Date() }, isCancelled: false },
+        meeting: { meetingDate: { gte: new Date() }, isCancelled: false, meetingType: MeetingType.STANDARD },
       },
       include: { meeting: true, member: true },
       orderBy: { meeting: { meetingDate: "asc" } },
@@ -141,7 +141,7 @@ export async function getHomeSpeakerData(memberId: string) {
     prisma.speaker.findFirst({
       where: {
         status: SpeakerStatus.COVER_REQUIRED,
-        meeting: { meetingDate: { gte: new Date() }, isCancelled: false },
+        meeting: { meetingDate: { gte: new Date() }, isCancelled: false, meetingType: MeetingType.STANDARD },
       },
       include: { meeting: true, member: true },
       orderBy: { meeting: { meetingDate: "asc" } },
@@ -180,6 +180,7 @@ export async function getRotaData() {
   return meetings.map((meeting) => ({
     ...meeting,
     displayDate: formatMeetingDate(meeting.meetingDate),
+    weekMode: meeting.isCancelled ? "NO_MEETING" : meeting.meetingType === MeetingType.INTERNAL ? "INTERNAL" : "STANDARD",
     speakerDeadline: speakerConfirmCutoff(meeting.meetingDate),
     deadlinePassed: hasCutoffPassed(speakerConfirmCutoff(meeting.meetingDate)),
     cutoffLabel: formatMeetingDate(speakerConfirmCutoff(meeting.meetingDate)),
@@ -200,7 +201,7 @@ export async function getAdminDashboard() {
   });
 
   const speakerWindow = await prisma.speaker.findMany({
-    where: { meeting: { meetingDate: { gte: new Date() }, isCancelled: false } },
+    where: { meeting: { meetingDate: { gte: new Date() }, isCancelled: false, meetingType: MeetingType.STANDARD } },
     include: { meeting: true, member: true },
     orderBy: { meeting: { meetingDate: "asc" } },
     take: 4,

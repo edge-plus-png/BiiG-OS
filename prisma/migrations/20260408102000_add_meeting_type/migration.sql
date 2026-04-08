@@ -1,0 +1,4 @@
+CREATE TYPE "MeetingType" AS ENUM ('STANDARD', 'INTERNAL');
+
+ALTER TABLE "Meeting"
+ADD COLUMN     "meetingType" "MeetingType" NOT NULL DEFAULT 'STANDARD';

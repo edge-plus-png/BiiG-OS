@@ -3,7 +3,7 @@
 import { randomInt } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { MemberRole, SpeakerStatus, VisitorLikelihood } from "@prisma/client";
+import { MeetingType, MemberRole, SpeakerStatus, VisitorLikelihood } from "@prisma/client";
 import { z } from "zod";
 import {
   assertLoginAllowed,
@@ -364,6 +364,15 @@ export async function adminAssignSpeakerAction(formData: FormData) {
       memberId: formData.get("memberId") || undefined,
     });
 
+  const meeting = await prisma.meeting.findUniqueOrThrow({
+    where: { id: parsed.meetingId },
+    select: { isCancelled: true, meetingType: true },
+  });
+
+  if (meeting.isCancelled || meeting.meetingType !== MeetingType.STANDARD) {
+    redirect("/rota?error=Speakers%20can%20only%20be%20assigned%20to%20standard%20meeting%20weeks");
+  }
+
   await prisma.speaker.upsert({
     where: { meetingId: parsed.meetingId },
     create: {
@@ -386,25 +395,48 @@ export async function adminAssignSpeakerAction(formData: FormData) {
 }
 
 export async function adminToggleMeetingCancelledAction(formData: FormData) {
-  await requireAdmin();
+  const admin = await requireAdmin();
   const parsed = z
     .object({
       meetingId: z.string().uuid(),
-      isCancelled: z.enum(["true", "false"]),
+      weekMode: z.enum(["standard", "internal", "none"]),
       cancelReason: z.string().optional(),
     })
     .parse({
       meetingId: formData.get("meetingId"),
-      isCancelled: formData.get("isCancelled"),
+      weekMode: formData.get("weekMode"),
       cancelReason: formData.get("cancelReason"),
     });
 
-  await prisma.meeting.update({
-    where: { id: parsed.meetingId },
-    data: {
-      isCancelled: parsed.isCancelled === "true",
-      cancelReason: parsed.isCancelled === "true" ? parsed.cancelReason || null : null,
-    },
+  await prisma.$transaction(async (tx) => {
+    const isCancelled = parsed.weekMode === "none";
+    const meetingType = parsed.weekMode === "internal" ? MeetingType.INTERNAL : MeetingType.STANDARD;
+
+    await tx.meeting.update({
+      where: { id: parsed.meetingId },
+      data: {
+        isCancelled,
+        meetingType,
+        cancelReason: parsed.weekMode !== "standard" ? parsed.cancelReason || null : null,
+      },
+    });
+
+    if (parsed.weekMode === "standard") {
+      await tx.speaker.upsert({
+        where: { meetingId: parsed.meetingId },
+        create: {
+          meetingId: parsed.meetingId,
+          assignedById: admin.id,
+          status: SpeakerStatus.AWAITING,
+        },
+        update: {},
+      });
+      return;
+    }
+
+    await tx.speaker.deleteMany({
+      where: { meetingId: parsed.meetingId },
+    });
   });
 
   revalidatePath("/rota");
