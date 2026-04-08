@@ -157,6 +157,17 @@ export async function saveThankYouAction(formData: FormData) {
       notes: formData.get("notes"),
     });
 
+  if (parsed.referralId) {
+    const referral = await prisma.referral.findUnique({
+      where: { id: parsed.referralId },
+      select: { fromMemberId: true, toMemberId: true },
+    });
+
+    if (!referral || referral.fromMemberId !== parsed.toMemberId || referral.toMemberId !== member.id) {
+      redirect("/thank-you/new?error=Only%20matching%20referrals%20for%20this%20member%20can%20be%20linked");
+    }
+  }
+
   await prisma.thankYou.create({
     data: {
       fromMemberId: member.id,
