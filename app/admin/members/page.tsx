@@ -4,7 +4,6 @@ import { Notice } from "@/components/Notice";
 import { createMemberAction, resetPinAction } from "@/lib/actions";
 import { requireAdmin } from "@/lib/auth";
 import { getMembers } from "@/lib/data";
-import { env } from "@/lib/env";
 
 export default async function AdminMembersPage({
   searchParams,
@@ -25,7 +24,6 @@ export default async function AdminMembersPage({
         <section className="card stack">
           <h1 className="sectionTitle">PIN revealed once</h1>
           <div style={{ fontSize: "1.8rem", fontWeight: 800, color: "#0b54a3" }}>{revealedPin}</div>
-          <div className="muted smallText">Share: Go to {env.APP_URL} - pick your name - enter PIN</div>
         </section>
       ) : null}
 
