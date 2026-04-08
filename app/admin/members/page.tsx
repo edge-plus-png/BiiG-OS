@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
 import { Notice } from "@/components/Notice";
 import { createMemberAction, resetPinAction } from "@/lib/actions";
@@ -90,6 +91,11 @@ export default async function AdminMembersPage({
               <div className="muted smallText">
                 {member.breakfastChoice || "No breakfast set"}
                 {member.dietaryNotes ? ` - ${member.dietaryNotes}` : ""}
+              </div>
+              <div className="inlineActions">
+                <Link className="secondaryButton" href={`/admin/members/${member.id}`}>
+                  View activity
+                </Link>
               </div>
               <form action={resetPinAction} className="formGrid">
                 <input type="hidden" name="memberId" value={member.id} />
