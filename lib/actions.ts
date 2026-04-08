@@ -64,6 +64,37 @@ export async function logoutAction() {
   redirect("/login");
 }
 
+export async function changeOwnPinAction(formData: FormData) {
+  const member = await requireMember();
+  const parsed = z
+    .object({
+      currentPin: z.string().min(4).max(12),
+      newPin: z.string().min(4).max(12),
+      confirmPin: z.string().min(4).max(12),
+    })
+    .parse({
+      currentPin: formData.get("currentPin"),
+      newPin: formData.get("newPin"),
+      confirmPin: formData.get("confirmPin"),
+    });
+
+  if (parsed.newPin !== parsed.confirmPin) {
+    redirect("/pin?error=New%20PIN%20entries%20must%20match");
+  }
+
+  const verification = await verifyPinWithUpgrade(parsed.currentPin, member.pinHash);
+  if (!verification.valid) {
+    redirect("/pin?error=Current%20PIN%20not%20recognised");
+  }
+
+  await prisma.member.update({
+    where: { id: member.id },
+    data: { pinHash: await hashPin(parsed.newPin) },
+  });
+
+  redirect("/pin?saved=1");
+}
+
 export async function saveNonAttendanceAction(formData: FormData) {
   const member = await requireMember();
   const parsed = z
