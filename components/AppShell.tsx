@@ -32,6 +32,9 @@ export function AppShell({ member, children }: AppShellProps) {
           <Link className="secondaryButton" href="/rota">
             Speaker rota
           </Link>
+          <Link className="secondaryButton" href="/activity">
+            My activity
+          </Link>
           {member.role === MemberRole.ADMIN ? (
             <Link className="secondaryButton" href="/admin">
               Admin

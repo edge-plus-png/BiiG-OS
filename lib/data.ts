@@ -319,3 +319,104 @@ export async function getExportRows(range: { from?: Date; to?: Date }, type: str
       return [];
   }
 }
+
+export async function getMemberActivityData(memberId: string) {
+  const [
+    member,
+    referralsGiven,
+    referralsReceived,
+    thankYousLogged,
+    thankYousReceived,
+    oneToOnes,
+    visitorsAdded,
+    testimonialsGiven,
+    testimonialsReceived,
+    introductionsGiven,
+  ] = await Promise.all([
+    prisma.member.findUniqueOrThrow({
+      where: { id: memberId },
+      select: { id: true, name: true, businessName: true },
+    }),
+    prisma.referral.findMany({
+      where: { fromMemberId: memberId },
+      include: { toMember: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+    prisma.referral.findMany({
+      where: { toMemberId: memberId },
+      include: { fromMember: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+    prisma.thankYou.findMany({
+      where: { fromMemberId: memberId },
+      include: { toMember: true, referral: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+    prisma.thankYou.findMany({
+      where: { toMemberId: memberId },
+      include: { fromMember: true, referral: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+    prisma.oneToOne.findMany({
+      where: {
+        OR: [{ memberLowId: memberId }, { memberHighId: memberId }],
+      },
+      include: { memberLow: true, memberHigh: true },
+      orderBy: { meetingDate: "desc" },
+      take: 25,
+    }),
+    prisma.visitor.findMany({
+      where: { addedByMemberId: memberId },
+      include: { meeting: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+    prisma.testimonial.findMany({
+      where: { fromMemberId: memberId },
+      include: { toMember: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+    prisma.testimonial.findMany({
+      where: { toMemberId: memberId },
+      include: { fromMember: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+    prisma.introduction.findMany({
+      where: { fromMemberId: memberId },
+      include: { toMember: true },
+      orderBy: { createdAt: "desc" },
+      take: 25,
+    }),
+  ]);
+
+  return {
+    member,
+    summary: {
+      referralsPassed: referralsGiven.length,
+      referralsReceived: referralsReceived.length,
+      thankYousLogged: thankYousLogged.length,
+      thankYousReceived: thankYousReceived.length,
+      businessReceived: thankYousReceived.reduce((sum, item) => sum + Number(item.amount), 0),
+      oneToOnes: oneToOnes.length,
+      visitorsAdded: visitorsAdded.length,
+      testimonialsGiven: testimonialsGiven.length,
+      testimonialsReceived: testimonialsReceived.length,
+      introductionsGiven: introductionsGiven.length,
+    },
+    referralsGiven,
+    referralsReceived,
+    thankYousLogged,
+    thankYousReceived,
+    oneToOnes,
+    visitorsAdded,
+    testimonialsGiven,
+    testimonialsReceived,
+    introductionsGiven,
+  };
+}
