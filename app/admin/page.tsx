@@ -14,7 +14,7 @@ export default async function AdminPage() {
   const weeklySummaryText = data.nextMeeting
     ? `BiiG update for ${formatMeetingDate(data.nextMeeting.meetingDate)}: ${data.nextMeeting.nonAttendance.length} apologies, ${data.nextMeeting.nonAttendance.filter((item) => item.hasSub).length} subs, ${data.nextMeeting.visitors.length} visitors expected.`
     : "BiiG weekly update.";
-  const monthlySummaryText = `BiiG month to date: ${data.metrics.monthToDate.referrals} referrals, ${data.metrics.monthToDate.oneToOnes} 1-2-1s, ${data.metrics.monthToDate.testimonials} testimonials, ${currency(data.metrics.monthToDate.thankYou)} thank you business, ${data.metrics.monthToDate.visitors} visitors.`;
+  const monthlySummaryText = `BiiG month to date: ${data.metrics.monthToDate.referrals} referrals, ${data.metrics.monthToDate.oneToOnes} 1-2-1s, ${data.metrics.monthToDate.testimonials} testimonials, ${data.metrics.monthToDate.introductions} introductions, ${currency(data.metrics.monthToDate.thankYou)} thank you business, ${data.metrics.monthToDate.visitors} visitors.`;
 
   return (
     <AppShell member={member}>
@@ -57,6 +57,10 @@ export default async function AdminPage() {
             <span className="muted smallText">Testimonials</span>
             <span className="metricValue">{data.metrics.monthToDate.testimonials}</span>
           </div>
+          <div className="metricCard">
+            <span className="muted smallText">Introductions</span>
+            <span className="metricValue">{data.metrics.monthToDate.introductions}</span>
+          </div>
         </div>
       </section>
 
@@ -84,6 +88,10 @@ export default async function AdminPage() {
           <div className="metricCard">
             <span className="muted smallText">Testimonials</span>
             <span className="metricValue">{data.metrics.yearToDate.testimonials}</span>
+          </div>
+          <div className="metricCard">
+            <span className="muted smallText">Introductions</span>
+            <span className="metricValue">{data.metrics.yearToDate.introductions}</span>
           </div>
         </div>
         <div className="inlineActions">

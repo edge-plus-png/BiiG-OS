@@ -44,7 +44,7 @@ export async function getHomeMetricsData(memberId: string) {
   yearStart.setMonth(0, 1);
   yearStart.setHours(0, 0, 0, 0);
 
-  const [monthReferralPassed, monthReferralReceived, monthThankYouReceived, monthVisitors, monthOneToOnes, monthTestimonialsGiven, yearReferralPassed, yearReferralReceived, yearThankYouReceived, yearVisitors, yearOneToOnes, yearTestimonialsGiven] = await Promise.all([
+  const [monthReferralPassed, monthReferralReceived, monthThankYouReceived, monthVisitors, monthOneToOnes, monthTestimonialsGiven, monthIntroductionsGiven, yearReferralPassed, yearReferralReceived, yearThankYouReceived, yearVisitors, yearOneToOnes, yearTestimonialsGiven, yearIntroductionsGiven] = await Promise.all([
     prisma.referral.count({
       where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
     }),
@@ -65,6 +65,9 @@ export async function getHomeMetricsData(memberId: string) {
       },
     }),
     prisma.testimonial.count({
+      where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
+    }),
+    prisma.introduction.count({
       where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
     }),
     prisma.referral.count({
@@ -89,6 +92,9 @@ export async function getHomeMetricsData(memberId: string) {
     prisma.testimonial.count({
       where: { fromMemberId: memberId, createdAt: { gte: yearStart } },
     }),
+    prisma.introduction.count({
+      where: { fromMemberId: memberId, createdAt: { gte: yearStart } },
+    }),
   ]);
 
   return {
@@ -100,6 +106,7 @@ export async function getHomeMetricsData(memberId: string) {
         visitors: monthVisitors,
         oneToOnes: monthOneToOnes,
         testimonialsGiven: monthTestimonialsGiven,
+        introductionsGiven: monthIntroductionsGiven,
       },
       yearToDate: {
         referralsPassed: yearReferralPassed,
@@ -108,6 +115,7 @@ export async function getHomeMetricsData(memberId: string) {
         visitors: yearVisitors,
         oneToOnes: yearOneToOnes,
         testimonialsGiven: yearTestimonialsGiven,
+        introductionsGiven: yearIntroductionsGiven,
       },
     },
     metricDefinitions: {
@@ -205,17 +213,19 @@ export async function getAdminDashboard() {
   yearStart.setMonth(0, 1);
   yearStart.setHours(0, 0, 0, 0);
 
-  const [monthReferrals, monthThankYou, monthVisitors, monthOneToOnes, monthTestimonials, yearReferrals, yearThankYou, yearVisitors, yearOneToOnes, yearTestimonials] = await Promise.all([
+  const [monthReferrals, monthThankYou, monthVisitors, monthOneToOnes, monthTestimonials, monthIntroductions, yearReferrals, yearThankYou, yearVisitors, yearOneToOnes, yearTestimonials, yearIntroductions] = await Promise.all([
     prisma.referral.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.thankYou.aggregate({ where: { createdAt: { gte: monthStart } }, _sum: { amount: true } }),
     prisma.visitor.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.oneToOne.count({ where: { meetingDate: { gte: monthStart } } }),
     prisma.testimonial.count({ where: { createdAt: { gte: monthStart } } }),
+    prisma.introduction.count({ where: { createdAt: { gte: monthStart } } }),
     prisma.referral.count({ where: { createdAt: { gte: yearStart } } }),
     prisma.thankYou.aggregate({ where: { createdAt: { gte: yearStart } }, _sum: { amount: true } }),
     prisma.visitor.count({ where: { createdAt: { gte: yearStart } } }),
     prisma.oneToOne.count({ where: { meetingDate: { gte: yearStart } } }),
     prisma.testimonial.count({ where: { createdAt: { gte: yearStart } } }),
+    prisma.introduction.count({ where: { createdAt: { gte: yearStart } } }),
   ]);
 
   return {
@@ -228,6 +238,7 @@ export async function getAdminDashboard() {
         visitors: monthVisitors,
         oneToOnes: monthOneToOnes,
         testimonials: monthTestimonials,
+        introductions: monthIntroductions,
       },
       yearToDate: {
         referrals: yearReferrals,
@@ -235,6 +246,7 @@ export async function getAdminDashboard() {
         visitors: yearVisitors,
         oneToOnes: yearOneToOnes,
         testimonials: yearTestimonials,
+        introductions: yearIntroductions,
       },
     },
   };
@@ -283,14 +295,21 @@ export async function getExportRows(range: { from?: Date; to?: Date }, type: str
         include: { fromMember: true, toMember: true },
         orderBy: { createdAt: "desc" },
       });
+    case "introductions":
+      return prisma.introduction.findMany({
+        where: { createdAt },
+        include: { fromMember: true, toMember: true },
+        orderBy: { createdAt: "desc" },
+      });
     case "monthly_summary":
       return prisma.$queryRaw<
-        Array<{ month: Date; referrals: bigint; thank_you: Prisma.Decimal | null; visitors: bigint; testimonials: bigint }>
+        Array<{ month: Date; referrals: bigint; thank_you: Prisma.Decimal | null; visitors: bigint; testimonials: bigint; introductions: bigint }>
       >`SELECT date_trunc('month', "createdAt") AS month,
           COUNT(*)::bigint AS referrals,
           (SELECT COALESCE(SUM("amount"), 0) FROM "ThankYou" t WHERE date_trunc('month', t."createdAt") = date_trunc('month', r."createdAt")) AS thank_you,
           (SELECT COUNT(*)::bigint FROM "Visitor" v WHERE date_trunc('month', v."createdAt") = date_trunc('month', r."createdAt")) AS visitors,
-          (SELECT COUNT(*)::bigint FROM "Testimonial" ts WHERE date_trunc('month', ts."createdAt") = date_trunc('month', r."createdAt")) AS testimonials
+          (SELECT COUNT(*)::bigint FROM "Testimonial" ts WHERE date_trunc('month', ts."createdAt") = date_trunc('month', r."createdAt")) AS testimonials,
+          (SELECT COUNT(*)::bigint FROM "Introduction" i WHERE date_trunc('month', i."createdAt") = date_trunc('month', r."createdAt")) AS introductions
         FROM "Referral" r
         WHERE (${range.from ?? null}::timestamp IS NULL OR r."createdAt" >= ${range.from ?? null})
           AND (${range.to ?? null}::timestamp IS NULL OR r."createdAt" <= ${range.to ?? null})
