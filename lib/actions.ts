@@ -553,3 +553,139 @@ export async function resetPinAction(formData: FormData) {
   revalidatePath("/admin/members");
   redirect(`/admin/members?reset=${parsed.memberId}&pin=${pin}`);
 }
+
+async function assertMemberManagementAllowed(adminId: string, memberId: string) {
+  const member = await prisma.member.findUnique({
+    where: { id: memberId },
+    select: { id: true, role: true, isActive: true, name: true },
+  });
+
+  if (!member) {
+    redirect("/admin/members?error=Member%20not%20found");
+  }
+
+  if (member.id === adminId) {
+    redirect("/admin/members?error=You%20cannot%20change%20your%20own%20admin%20access%20here");
+  }
+
+  if (member.role === MemberRole.ADMIN && member.isActive) {
+    const activeAdmins = await prisma.member.count({
+      where: { role: MemberRole.ADMIN, isActive: true },
+    });
+
+    if (activeAdmins <= 1) {
+      redirect("/admin/members?error=At%20least%20one%20active%20leader%20must%20remain");
+    }
+  }
+
+  return member;
+}
+
+export async function updateMemberRoleAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = z
+    .object({
+      memberId: z.string().uuid(),
+      role: z.nativeEnum(MemberRole),
+    })
+    .parse({
+      memberId: formData.get("memberId"),
+      role: formData.get("role"),
+    });
+
+  const member = await prisma.member.findUnique({
+    where: { id: parsed.memberId },
+    select: { id: true, role: true, isActive: true },
+  });
+
+  if (!member) {
+    redirect("/admin/members?error=Member%20not%20found");
+  }
+
+  if (member.id === admin.id) {
+    redirect("/admin/members?error=Use%20a%20different%20leader%20account%20to%20change%20your%20own%20role");
+  }
+
+  if (member.role === MemberRole.ADMIN && member.isActive && parsed.role !== MemberRole.ADMIN) {
+    const activeAdmins = await prisma.member.count({
+      where: { role: MemberRole.ADMIN, isActive: true },
+    });
+    if (activeAdmins <= 1) {
+      redirect("/admin/members?error=At%20least%20one%20active%20leader%20must%20remain");
+    }
+  }
+
+  await prisma.member.update({
+    where: { id: parsed.memberId },
+    data: { role: parsed.role },
+  });
+
+  revalidatePath("/admin/members");
+  redirect(`/admin/members?role=${parsed.memberId}`);
+}
+
+export async function toggleMemberArchivedAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = z
+    .object({
+      memberId: z.string().uuid(),
+      archive: z.enum(["yes", "no"]),
+    })
+    .parse({
+      memberId: formData.get("memberId"),
+      archive: formData.get("archive"),
+    });
+
+  if (parsed.archive === "yes") {
+    await assertMemberManagementAllowed(admin.id, parsed.memberId);
+  }
+
+  await prisma.member.update({
+    where: { id: parsed.memberId },
+    data: { isActive: parsed.archive !== "yes" },
+  });
+
+  if (parsed.archive === "yes") {
+    await prisma.session.deleteMany({ where: { memberId: parsed.memberId } });
+    await prisma.loginAttempt.deleteMany({ where: { key: `member:${parsed.memberId}` } });
+  }
+
+  revalidatePath("/admin/members");
+  redirect(`/admin/members?${parsed.archive === "yes" ? "archived" : "restored"}=${parsed.memberId}`);
+}
+
+export async function deleteMemberAction(formData: FormData) {
+  const admin = await requireAdmin();
+  const parsed = z
+    .object({
+      memberId: z.string().uuid(),
+    })
+    .parse({
+      memberId: formData.get("memberId"),
+    });
+
+  const member = await assertMemberManagementAllowed(admin.id, parsed.memberId);
+
+  const activityCounts = await prisma.$transaction([
+    prisma.referral.count({ where: { OR: [{ fromMemberId: parsed.memberId }, { toMemberId: parsed.memberId }] } }),
+    prisma.thankYou.count({ where: { OR: [{ fromMemberId: parsed.memberId }, { toMemberId: parsed.memberId }] } }),
+    prisma.oneToOne.count({ where: { OR: [{ memberLowId: parsed.memberId }, { memberHighId: parsed.memberId }] } }),
+    prisma.visitor.count({ where: { addedByMemberId: parsed.memberId } }),
+    prisma.nonAttendance.count({ where: { memberId: parsed.memberId } }),
+    prisma.speaker.count({ where: { OR: [{ memberId: parsed.memberId }, { assignedById: parsed.memberId }] } }),
+    prisma.testimonial.count({ where: { OR: [{ fromMemberId: parsed.memberId }, { toMemberId: parsed.memberId }] } }),
+    prisma.introduction.count({ where: { OR: [{ fromMemberId: parsed.memberId }, { toMemberId: parsed.memberId }] } }),
+  ]);
+
+  const hasLinkedHistory = activityCounts.some((count) => count > 0);
+  if (hasLinkedHistory) {
+    redirect(`/admin/members?error=${encodeURIComponent(`${member.name} has activity history and should be archived instead of deleted`)}`);
+  }
+
+  await prisma.member.delete({
+    where: { id: parsed.memberId },
+  });
+
+  revalidatePath("/admin/members");
+  redirect("/admin/members?deleted=1");
+}

@@ -10,6 +10,12 @@ export async function getMembers() {
   });
 }
 
+export async function getAdminMembers() {
+  return prisma.member.findMany({
+    orderBy: [{ isActive: "desc" }, { name: "asc" }],
+  });
+}
+
 export async function getNextMeeting() {
   await ensureSchedule();
 
