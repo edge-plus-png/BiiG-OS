@@ -1,4 +1,4 @@
-import { SpeakerStatus } from "@prisma/client";
+import { MeetingType, SpeakerStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getNextFridays } from "@/lib/time";
 
@@ -32,6 +32,7 @@ export async function ensureSchedule() {
         id: true,
         meetingDate: true,
         isCancelled: true,
+        meetingType: true,
         speaker: {
           select: { id: true },
         },
@@ -41,10 +42,12 @@ export async function ensureSchedule() {
     const hasMeetingCoverage =
       upcomingMeetings.length >= 12 &&
       upcomingMeetings[upcomingMeetings.length - 1].meetingDate >= latestRequiredMeeting;
-    const upcomingActiveMeetings = upcomingMeetings.filter((meeting) => !meeting.isCancelled).slice(0, 4);
+    const upcomingSpeakerMeetings = upcomingMeetings
+      .filter((meeting) => !meeting.isCancelled && meeting.meetingType === MeetingType.STANDARD)
+      .slice(0, 4);
     const hasSpeakerCoverage =
-      upcomingActiveMeetings.length >= 4 &&
-      upcomingActiveMeetings.every((meeting) => Boolean(meeting.speaker?.id));
+      upcomingSpeakerMeetings.length >= 4 &&
+      upcomingSpeakerMeetings.every((meeting) => Boolean(meeting.speaker?.id));
 
     if (hasMeetingCoverage && hasSpeakerCoverage) {
       globalForSchedule.ensureScheduleLastRun = Date.now();
@@ -63,6 +66,7 @@ export async function ensureSchedule() {
       where: {
         meetingDate: { gte: new Date(new Date().setHours(0, 0, 0, 0)) },
         isCancelled: false,
+        meetingType: MeetingType.STANDARD,
       },
       orderBy: { meetingDate: "asc" },
       take: 4,
