@@ -37,14 +37,6 @@ export default async function NewIntroductionPage() {
             <input className="input" name="contactCompany" />
           </label>
           <label className="label">
-            Status
-            <select className="select" name="status" defaultValue="MADE">
-              <option value="MADE">Made</option>
-              <option value="MEETING_BOOKED">Meeting booked</option>
-              <option value="OPPORTUNITY_CREATED">Opportunity created</option>
-            </select>
-          </label>
-          <label className="label">
             Notes
             <textarea className="textarea" name="notes" placeholder="Optional" />
           </label>

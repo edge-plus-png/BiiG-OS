@@ -110,7 +110,7 @@ export async function GET(request: NextRequest, context: { params: Promise<{ typ
       ]);
       break;
     case "introductions":
-      headers = ["Created", "From", "From Business", "To", "To Business", "Contact", "Company", "Status", "Notes"];
+      headers = ["Created", "From", "From Business", "To", "To Business", "Contact", "Company", "Notes"];
       dataRows = rows.map((row: any) => [
         format(row.createdAt, "yyyy-MM-dd HH:mm"),
         row.fromMember.name,
@@ -119,7 +119,6 @@ export async function GET(request: NextRequest, context: { params: Promise<{ typ
         row.toMember.businessName,
         row.contactName,
         row.contactCompany,
-        row.status,
         row.notes,
       ]);
       break;
