@@ -16,7 +16,7 @@ export default async function AdminMembersPage({
   const revealedPin = params.pin;
   const query = params.q?.trim().toLowerCase() ?? "";
   const filteredMembers = query
-    ? members.filter((member) => `${member.name} ${member.businessName}`.toLowerCase().includes(query))
+    ? members.filter((member) => `${member.name} ${member.businessName} ${member.email ?? ""}`.toLowerCase().includes(query))
     : members;
 
   return (
@@ -39,6 +39,10 @@ export default async function AdminMembersPage({
           <label className="label">
             Business
             <input className="input" name="businessName" required />
+          </label>
+          <label className="label">
+            Email
+            <input className="input" name="email" type="email" />
           </label>
           <label className="label">
             Phone
@@ -88,6 +92,7 @@ export default async function AdminMembersPage({
               <div style={{ fontWeight: 700 }}>
                 {member.name} - {member.businessName}
               </div>
+              {member.email ? <div className="muted smallText">{member.email}</div> : null}
               <div className="muted smallText">
                 {member.breakfastChoice || "No breakfast set"}
                 {member.dietaryNotes ? ` - ${member.dietaryNotes}` : ""}

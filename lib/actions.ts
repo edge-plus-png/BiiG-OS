@@ -481,6 +481,7 @@ export async function createMemberAction(formData: FormData) {
     .object({
       name: z.string().min(1),
       businessName: z.string().min(1),
+      email: z.string().email().optional(),
       phone: z.string().optional(),
       breakfastChoice: z.string().optional(),
       dietaryNotes: z.string().optional(),
@@ -490,6 +491,7 @@ export async function createMemberAction(formData: FormData) {
     .parse({
       name: formData.get("name"),
       businessName: formData.get("businessName"),
+      email: formData.get("email") || undefined,
       phone: formData.get("phone"),
       breakfastChoice: formData.get("breakfastChoice"),
       dietaryNotes: formData.get("dietaryNotes"),
@@ -502,6 +504,7 @@ export async function createMemberAction(formData: FormData) {
     data: {
       name: parsed.name,
       businessName: parsed.businessName,
+      email: parsed.email || null,
       phone: parsed.phone || null,
       breakfastChoice: parsed.breakfastChoice || null,
       dietaryNotes: parsed.dietaryNotes || null,
