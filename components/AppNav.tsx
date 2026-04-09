@@ -12,7 +12,7 @@ const baseItems = [
   { href: "/", label: "Home", icon: Home },
   { href: "/rota", label: "Rota", icon: RadioTower },
   { href: "/activity", label: "Activity", icon: Rows3 },
-  { href: "/pin", label: "PIN", icon: KeyRound },
+  { href: "/pin", label: "Details", icon: KeyRound },
 ] as const;
 
 export function AppNav({ isAdmin }: AppNavProps) {
