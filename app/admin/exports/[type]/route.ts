@@ -18,6 +18,14 @@ function parseDate(value: string | null, endOfDay = false) {
   return date;
 }
 
+function partyName(row: { toMember?: { name: string } | null; toExternalName?: string | null }) {
+  return row.toMember?.name ?? row.toExternalName ?? "External contact";
+}
+
+function partyBusiness(row: { toMember?: { businessName: string } | null; toExternalBusiness?: string | null }) {
+  return row.toMember?.businessName ?? row.toExternalBusiness ?? "";
+}
+
 export async function GET(request: NextRequest, context: { params: Promise<{ type: string }> }) {
   const member = await getCurrentMember();
   if (!member) {
@@ -42,8 +50,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ typ
         format(row.createdAt, "yyyy-MM-dd HH:mm"),
         row.fromMember.name,
         row.fromMember.businessName,
-        row.toMember.name,
-        row.toMember.businessName,
+        partyName(row),
+        partyBusiness(row),
         row.leadName,
         row.leadContact,
         row.notes,
@@ -56,8 +64,8 @@ export async function GET(request: NextRequest, context: { params: Promise<{ typ
         format(row.createdAt, "yyyy-MM-dd HH:mm"),
         row.fromMember.name,
         row.fromMember.businessName,
-        row.toMember.name,
-        row.toMember.businessName,
+        partyName(row),
+        partyBusiness(row),
         row.amount,
         row.referral?.leadName,
         row.notes,

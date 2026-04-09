@@ -103,8 +103,8 @@ export function MemberActivityView({
             items={data.referralsGiven.map((item) => ({
               id: item.id,
               when: item.createdAt,
-              title: `${item.toMember.name} - ${item.leadName}`,
-              detail: item.notes || item.leadContact || item.toMember.businessName,
+              title: `${item.counterparty.name} - ${item.leadName}`,
+              detail: item.notes || item.leadContact || item.counterparty.businessName,
             }))}
           />
         ) : null}
@@ -115,8 +115,8 @@ export function MemberActivityView({
             items={data.thankYousLogged.map((item) => ({
               id: item.id,
               when: item.createdAt,
-              title: `${item.toMember.name} - ${currency(Number(item.amount))}`,
-              detail: item.referral?.leadName ? `Referral: ${item.referral.leadName}` : item.notes || item.toMember.businessName,
+              title: `${item.counterparty.name} - ${currency(Number(item.amount))}`,
+              detail: item.referral?.leadName ? `Referral: ${item.referral.leadName}` : item.notes || item.counterparty.businessName,
             }))}
           />
         ) : null}
