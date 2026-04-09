@@ -179,22 +179,14 @@ export async function saveReferralAction(formData: FormData) {
   const member = await requireMember();
   const parsed = z
     .object({
-      toMemberId: z.string().uuid().optional(),
-      toExternalName: z.string().trim().optional(),
-      toExternalBusiness: z.string().trim().optional(),
+      toMemberId: z.string().uuid(),
       leadName: z.string().min(1),
       leadContact: z.string().optional(),
       notes: z.string().optional(),
       meetingId: z.string().uuid().optional(),
     })
-    .refine((data) => Boolean(data.toMemberId || data.toExternalName), {
-      message: "Choose a current member or enter an external name",
-      path: ["toMemberId"],
-    })
     .safeParse({
-      toMemberId: formData.get("toMemberId") || undefined,
-      toExternalName: formData.get("toExternalName") || undefined,
-      toExternalBusiness: formData.get("toExternalBusiness") || undefined,
+      toMemberId: formData.get("toMemberId"),
       leadName: formData.get("leadName"),
       leadContact: formData.get("leadContact"),
       notes: formData.get("notes"),
@@ -202,15 +194,13 @@ export async function saveReferralAction(formData: FormData) {
     });
 
   if (!parsed.success) {
-    redirect("/referrals/new?error=Choose%20a%20current%20member%20or%20enter%20an%20external%20name");
+    redirect("/referrals/new?error=Choose%20a%20current%20member");
   }
 
   await prisma.referral.create({
     data: {
       fromMemberId: member.id,
-      toMemberId: parsed.data.toMemberId || undefined,
-      toExternalName: parsed.data.toMemberId ? undefined : parsed.data.toExternalName || undefined,
-      toExternalBusiness: parsed.data.toMemberId ? undefined : parsed.data.toExternalBusiness || undefined,
+      toMemberId: parsed.data.toMemberId,
       leadName: parsed.data.leadName,
       leadContact: parsed.data.leadContact || null,
       notes: parsed.data.notes || null,
@@ -227,33 +217,31 @@ export async function saveThankYouAction(formData: FormData) {
   const member = await requireMember();
   const parsed = z
     .object({
-      toMemberId: z.string().uuid().optional(),
-      toExternalName: z.string().trim().optional(),
-      toExternalBusiness: z.string().trim().optional(),
+      recipient: z.string().min(1).refine((value) => value === "external:visitor" || value === "external:ex-member" || value.startsWith("member:"), {
+        message: "Choose who the thank you is for",
+      }),
       referralId: z.string().uuid().optional(),
       amount: z.coerce.number().positive(),
       notes: z.string().optional(),
     })
-    .refine((data) => Boolean(data.toMemberId || data.toExternalName), {
-      message: "Choose a current member or enter an external name",
-      path: ["toMemberId"],
-    })
-    .refine((data) => !data.referralId || Boolean(data.toMemberId), {
+    .refine((data) => !data.referralId || data.recipient.startsWith("member:"), {
       message: "Referral linking only works when thanking a current member",
       path: ["referralId"],
     })
     .safeParse({
-      toMemberId: formData.get("toMemberId") || undefined,
-      toExternalName: formData.get("toExternalName") || undefined,
-      toExternalBusiness: formData.get("toExternalBusiness") || undefined,
+      recipient: formData.get("recipient"),
       referralId: formData.get("referralId") || undefined,
       amount: formData.get("amount"),
       notes: formData.get("notes"),
     });
 
   if (!parsed.success) {
-    redirect("/thank-you/new?error=Choose%20a%20current%20member%20or%20enter%20an%20external%20name");
+    redirect("/thank-you/new?error=Choose%20who%20the%20thank%20you%20is%20for");
   }
+
+  const recipient = parsed.data.recipient;
+  const toMemberId = recipient.startsWith("member:") ? recipient.replace("member:", "") : undefined;
+  const toExternalName = recipient === "external:visitor" ? "Visitor" : recipient === "external:ex-member" ? "Ex-member" : undefined;
 
   if (parsed.data.referralId) {
     const referral = await prisma.referral.findUnique({
@@ -261,7 +249,7 @@ export async function saveThankYouAction(formData: FormData) {
       select: { fromMemberId: true, toMemberId: true },
     });
 
-    if (!referral || referral.fromMemberId !== parsed.data.toMemberId || referral.toMemberId !== member.id) {
+    if (!referral || referral.fromMemberId !== toMemberId || referral.toMemberId !== member.id) {
       redirect("/thank-you/new?error=Only%20matching%20referrals%20for%20this%20member%20can%20be%20linked");
     }
   }
@@ -269,9 +257,8 @@ export async function saveThankYouAction(formData: FormData) {
   await prisma.thankYou.create({
     data: {
       fromMemberId: member.id,
-      toMemberId: parsed.data.toMemberId || undefined,
-      toExternalName: parsed.data.toMemberId ? undefined : parsed.data.toExternalName || undefined,
-      toExternalBusiness: parsed.data.toMemberId ? undefined : parsed.data.toExternalBusiness || undefined,
+      toMemberId,
+      toExternalName,
       referralId: parsed.data.referralId || null,
       amount: parsed.data.amount,
       notes: parsed.data.notes || null,
