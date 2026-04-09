@@ -27,7 +27,7 @@ export default async function NewThankYouPage({
       <section className="card stack">
         <h1 className="sectionTitle">Thank you for the business</h1>
         {params.error ? <Notice tone="error">{params.error}</Notice> : null}
-        <p className="muted smallText">You can thank a current member, a visitor or a previous member. Referral linking only works for current members.</p>
+        <p className="muted smallText">Choose a current member, Visitor or Ex-member. Referral linking only works for current members.</p>
         <ThankYouForm
           members={members.filter((item) => item.id !== member.id)}
           referrals={referrals.map((item) => ({

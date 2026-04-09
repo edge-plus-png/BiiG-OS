@@ -20,9 +20,11 @@ export default async function NewReferralPage({
         <form action={saveReferralAction} className="formGrid">
           {nextMeeting ? <input type="hidden" name="meetingId" value={nextMeeting.id} /> : null}
           <label className="label">
-            To current member
-            <select className="select" name="toMemberId" defaultValue="">
-              <option value="">Not a current member</option>
+            To member
+            <select className="select" name="toMemberId" required defaultValue="">
+              <option value="" disabled>
+                Choose a member
+              </option>
               {members
                 .filter((item) => item.id !== member.id)
                 .map((item) => (
@@ -32,15 +34,6 @@ export default async function NewReferralPage({
                 ))}
             </select>
           </label>
-          <label className="label">
-            Or external person
-            <input className="input" name="toExternalName" placeholder="Visitor or previous member name" />
-          </label>
-          <label className="label">
-            External business
-            <input className="input" name="toExternalBusiness" placeholder="Optional" />
-          </label>
-          <p className="muted smallText">Choose a current member or enter a visitor / previous member instead.</p>
           <label className="label">
             Lead name
             <input className="input" name="leadName" required />

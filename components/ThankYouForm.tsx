@@ -14,35 +14,30 @@ type ThankYouFormProps = {
 };
 
 export function ThankYouForm({ members, referrals }: ThankYouFormProps) {
-  const [toMemberId, setToMemberId] = useState("");
+  const [recipient, setRecipient] = useState("");
+  const selectedMemberId = recipient.startsWith("member:") ? recipient.replace("member:", "") : "";
 
   const matchingReferrals = useMemo(
-    () => referrals.filter((item) => item.fromMemberId === toMemberId),
-    [referrals, toMemberId],
+    () => referrals.filter((item) => item.fromMemberId === selectedMemberId),
+    [referrals, selectedMemberId],
   );
 
   return (
     <form action={saveThankYouAction} className="formGrid">
       <label className="label">
-        To current member
-        <select className="select" name="toMemberId" value={toMemberId} onChange={(event) => setToMemberId(event.target.value)}>
-          <option value="">
-            Not a current member
+        Thank you to
+        <select className="select" name="recipient" required value={recipient} onChange={(event) => setRecipient(event.target.value)}>
+          <option value="" disabled>
+            Choose who this is for
           </option>
           {members.map((item) => (
-            <option key={item.id} value={item.id}>
+            <option key={item.id} value={`member:${item.id}`}>
               {item.name} - {item.businessName}
             </option>
           ))}
+          <option value="external:visitor">Visitor</option>
+          <option value="external:ex-member">Ex-member</option>
         </select>
-      </label>
-      <label className="label">
-        Or external person
-        <input className="input" name="toExternalName" placeholder="Visitor or previous member name" />
-      </label>
-      <label className="label">
-        External business
-        <input className="input" name="toExternalBusiness" placeholder="Optional" />
       </label>
       <label className="label">
         Amount (£)
@@ -50,9 +45,9 @@ export function ThankYouForm({ members, referrals }: ThankYouFormProps) {
       </label>
       <label className="label">
         Link to referral
-        <select className="select" name="referralId" defaultValue="" disabled={!toMemberId || matchingReferrals.length === 0}>
+        <select className="select" name="referralId" defaultValue="" disabled={!selectedMemberId || matchingReferrals.length === 0}>
           <option value="">
-            {!toMemberId ? "Only available for current members" : matchingReferrals.length === 0 ? "No matching referrals from this member" : "Optional"}
+            {!selectedMemberId ? "Only available for current members" : matchingReferrals.length === 0 ? "No matching referrals from this member" : "Optional"}
           </option>
           {matchingReferrals.map((item) => (
             <option key={item.id} value={item.id}>
