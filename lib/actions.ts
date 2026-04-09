@@ -3,7 +3,7 @@
 import { randomInt } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { MeetingType, MemberRole, SpeakerStatus, VisitorLikelihood } from "@prisma/client";
+import { MeetingType, MemberRole, Prisma, SpeakerStatus, VisitorLikelihood } from "@prisma/client";
 import { z } from "zod";
 import {
   assertLoginAllowed,
@@ -559,33 +559,45 @@ export async function createMemberAction(formData: FormData) {
       pin: z.string().min(4).max(12).optional(),
       role: z.nativeEnum(MemberRole).optional(),
     })
-    .parse({
+    .safeParse({
       name: formData.get("name"),
       businessName: formData.get("businessName"),
       email: formData.get("email") || undefined,
-      phone: formData.get("phone"),
-      breakfastChoice: formData.get("breakfastChoice"),
-      dietaryNotes: formData.get("dietaryNotes"),
+      phone: formData.get("phone") || undefined,
+      breakfastChoice: formData.get("breakfastChoice") || undefined,
+      dietaryNotes: formData.get("dietaryNotes") || undefined,
       pin: formData.get("pin") || undefined,
       role: formData.get("role") || undefined,
     });
 
-  const pin = parsed.pin || `${randomInt(1000, 9999)}`;
-  const member = await prisma.member.create({
-    data: {
-      name: parsed.name,
-      businessName: parsed.businessName,
-      email: parsed.email || null,
-      phone: parsed.phone || null,
-      breakfastChoice: parsed.breakfastChoice || null,
-      dietaryNotes: parsed.dietaryNotes || null,
-      pinHash: await hashPin(pin),
-      role: parsed.role ?? MemberRole.MEMBER,
-    },
-  });
+  if (!parsed.success) {
+    redirect("/admin/members?error=Enter%20a%20name%20and%20business%20to%20create%20a%20member");
+  }
 
-  revalidatePath("/admin/members");
-  redirect(`/admin/members?created=${member.id}&pin=${pin}`);
+  const pin = parsed.data.pin || `${randomInt(1000, 9999)}`;
+
+  try {
+    const member = await prisma.member.create({
+      data: {
+        name: parsed.data.name.trim(),
+        businessName: parsed.data.businessName.trim(),
+        email: parsed.data.email || null,
+        phone: parsed.data.phone || null,
+        breakfastChoice: parsed.data.breakfastChoice || null,
+        dietaryNotes: parsed.data.dietaryNotes || null,
+        pinHash: await hashPin(pin),
+        role: parsed.data.role ?? MemberRole.MEMBER,
+      },
+    });
+
+    revalidatePath("/admin/members");
+    redirect(`/admin/members?created=${member.id}&pin=${pin}`);
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      redirect("/admin/members?error=A%20member%20with%20that%20name%20and%20business%20already%20exists");
+    }
+    throw error;
+  }
 }
 
 export async function resetPinAction(formData: FormData) {
