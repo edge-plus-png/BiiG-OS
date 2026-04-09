@@ -36,7 +36,7 @@ export function MemberActivityView({
         ) : null}
         <div>
           <h1 className="sectionTitle">{heading}</h1>
-          <div style={{ fontWeight: 700 }}>
+          <div className="activityMemberLine" style={{ fontWeight: 700 }}>
             {data.member.name} - {data.member.businessName}
           </div>
           {helperText ? <p className="muted smallText">{helperText}</p> : null}
@@ -64,7 +64,7 @@ export function MemberActivityView({
               <option value="introductions">Introductions</option>
             </select>
           </label>
-          <div className="inlineActions">
+          <div className="inlineActions activityFilterActions">
             <button className="secondaryButton" type="submit">
               Apply filters
             </button>
@@ -236,14 +236,14 @@ function ActivityList({
   items: Array<{ id: string; when: Date; title: string; detail?: string | null }>;
 }) {
   return (
-    <div className="stack" style={{ gap: 10 }}>
-      <div style={{ fontWeight: 700 }}>{title}</div>
+    <div className="stack activityListBlock" style={{ gap: 10 }}>
+      <div className="activityListTitle" style={{ fontWeight: 700 }}>{title}</div>
       {items.length ? (
         <div className="list">
           {items.map((item) => (
             <div key={item.id} className="listRow activityRow">
               <div className="activityMeta">{format(item.when, "dd MMM yyyy")}</div>
-              <div style={{ fontWeight: 700 }}>{item.title}</div>
+              <div className="activityItemTitle" style={{ fontWeight: 700 }}>{item.title}</div>
               {item.detail ? <div className="muted smallText">{item.detail}</div> : null}
             </div>
           ))}

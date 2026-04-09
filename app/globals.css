@@ -407,6 +407,12 @@ button {
   text-transform: uppercase;
 }
 
+.activityMemberLine,
+.activityListTitle,
+.activityItemTitle {
+  overflow-wrap: anywhere;
+}
+
 .inlineLink {
   display: inline-flex;
   align-items: center;
@@ -434,6 +440,10 @@ button {
   width: auto;
   max-width: 100%;
   min-width: 0;
+}
+
+.activityFilterActions > * {
+  flex: 1 1 180px;
 }
 
 .actionGrid {
@@ -563,6 +573,10 @@ button {
     grid-template-columns: 1fr;
   }
 
+  .activitySummaryRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .snapshotHeader {
     grid-template-columns: 1fr;
     display: grid;
@@ -607,5 +621,28 @@ button {
   .heroStatus {
     justify-items: start;
     text-align: left;
+  }
+
+  .activityFilterActions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .activityFilterActions > * {
+    width: 100%;
+  }
+
+  .activityRow {
+    padding: 12px;
+  }
+
+  .activityMeta {
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+  }
+
+  .activityItemTitle {
+    font-size: 0.95rem;
+    line-height: 1.3;
   }
 }
