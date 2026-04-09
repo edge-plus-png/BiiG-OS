@@ -1,24 +1,28 @@
 import { AppShell } from "@/components/AppShell";
+import { Notice } from "@/components/Notice";
 import { saveReferralAction } from "@/lib/actions";
 import { requireMember } from "@/lib/auth";
 import { getMembers, getNextMeeting } from "@/lib/data";
 
-export default async function NewReferralPage() {
+export default async function NewReferralPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>;
+}) {
   const member = await requireMember();
-  const [members, nextMeeting] = await Promise.all([getMembers(), getNextMeeting()]);
+  const [members, nextMeeting, params] = await Promise.all([getMembers(), getNextMeeting(), searchParams]);
 
   return (
     <AppShell member={member}>
       <section className="card stack">
         <h1 className="sectionTitle">Pass a referral</h1>
+        {params.error ? <Notice tone="error">{params.error}</Notice> : null}
         <form action={saveReferralAction} className="formGrid">
           {nextMeeting ? <input type="hidden" name="meetingId" value={nextMeeting.id} /> : null}
           <label className="label">
-            To member
-            <select className="select" name="toMemberId" required defaultValue="">
-              <option value="" disabled>
-                Choose a member
-              </option>
+            To current member
+            <select className="select" name="toMemberId" defaultValue="">
+              <option value="">Not a current member</option>
               {members
                 .filter((item) => item.id !== member.id)
                 .map((item) => (
@@ -28,6 +32,15 @@ export default async function NewReferralPage() {
                 ))}
             </select>
           </label>
+          <label className="label">
+            Or external person
+            <input className="input" name="toExternalName" placeholder="Visitor or previous member name" />
+          </label>
+          <label className="label">
+            External business
+            <input className="input" name="toExternalBusiness" placeholder="Optional" />
+          </label>
+          <p className="muted smallText">Choose a current member or enter a visitor / previous member instead.</p>
           <label className="label">
             Lead name
             <input className="input" name="leadName" required />

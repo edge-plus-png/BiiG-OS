@@ -114,7 +114,9 @@ model NonAttendance {
 model Referral {
   id             String         @id @default(uuid())
   fromMemberId   String
-  toMemberId     String
+  toMemberId     String?
+  toExternalName String?
+  toExternalBusiness String?
   meetingId      String?
   leadName       String
   leadContact    String?
@@ -123,7 +125,7 @@ model Referral {
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   fromMember     Member         @relation("ReferralFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
-  toMember       Member         @relation("ReferralTo", fields: [toMemberId], references: [id], onDelete: Cascade)
+  toMember       Member?        @relation("ReferralTo", fields: [toMemberId], references: [id], onDelete: Cascade)
   meeting        Meeting?       @relation(fields: [meetingId], references: [id], onDelete: SetNull)
   thankYous      ThankYou[]
 }
@@ -131,14 +133,16 @@ model Referral {
 model ThankYou {
   id           String   @id @default(uuid())
   fromMemberId String
-  toMemberId   String
+  toMemberId   String?
+  toExternalName String?
+  toExternalBusiness String?
   referralId   String?
   amount       Decimal  @db.Decimal(10, 2)
   notes        String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   fromMember   Member   @relation("ThankYouFrom", fields: [fromMemberId], references: [id], onDelete: Cascade)
-  toMember     Member   @relation("ThankYouTo", fields: [toMemberId], references: [id], onDelete: Cascade)
+  toMember     Member?  @relation("ThankYouTo", fields: [toMemberId], references: [id], onDelete: Cascade)
   referral     Referral? @relation(fields: [referralId], references: [id], onDelete: SetNull)
 }
 

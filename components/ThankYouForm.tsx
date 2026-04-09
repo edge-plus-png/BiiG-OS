@@ -24,10 +24,10 @@ export function ThankYouForm({ members, referrals }: ThankYouFormProps) {
   return (
     <form action={saveThankYouAction} className="formGrid">
       <label className="label">
-        To member
-        <select className="select" name="toMemberId" required value={toMemberId} onChange={(event) => setToMemberId(event.target.value)}>
-          <option value="" disabled>
-            Choose a member
+        To current member
+        <select className="select" name="toMemberId" value={toMemberId} onChange={(event) => setToMemberId(event.target.value)}>
+          <option value="">
+            Not a current member
           </option>
           {members.map((item) => (
             <option key={item.id} value={item.id}>
@@ -37,6 +37,14 @@ export function ThankYouForm({ members, referrals }: ThankYouFormProps) {
         </select>
       </label>
       <label className="label">
+        Or external person
+        <input className="input" name="toExternalName" placeholder="Visitor or previous member name" />
+      </label>
+      <label className="label">
+        External business
+        <input className="input" name="toExternalBusiness" placeholder="Optional" />
+      </label>
+      <label className="label">
         Amount (£)
         <input className="input" name="amount" type="number" step="0.01" min="0.01" required />
       </label>
@@ -44,7 +52,7 @@ export function ThankYouForm({ members, referrals }: ThankYouFormProps) {
         Link to referral
         <select className="select" name="referralId" defaultValue="" disabled={!toMemberId || matchingReferrals.length === 0}>
           <option value="">
-            {!toMemberId ? "Choose a member first" : matchingReferrals.length === 0 ? "No matching referrals from this member" : "Optional"}
+            {!toMemberId ? "Only available for current members" : matchingReferrals.length === 0 ? "No matching referrals from this member" : "Optional"}
           </option>
           {matchingReferrals.map((item) => (
             <option key={item.id} value={item.id}>

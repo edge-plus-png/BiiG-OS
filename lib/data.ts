@@ -3,6 +3,24 @@ import { prisma } from "@/lib/prisma";
 import { ensureSchedule } from "@/lib/schedule";
 import { formatMeetingDate, hasCutoffPassed, nonAttendanceCutoff, speakerConfirmCutoff } from "@/lib/time";
 
+function displayCounterparty(
+  member: { name: string; businessName: string } | null | undefined,
+  externalName?: string | null,
+  externalBusiness?: string | null,
+) {
+  if (member) {
+    return {
+      name: member.name,
+      businessName: member.businessName,
+    };
+  }
+
+  return {
+    name: externalName || "External contact",
+    businessName: externalBusiness || "",
+  };
+}
+
 export async function getMembers() {
   return prisma.member.findMany({
     where: { isActive: true },
@@ -433,9 +451,15 @@ export async function getMemberActivityDataWithFilters(
       testimonialsReceived: testimonialsReceived.length,
       introductionsGiven: introductionsGiven.length,
     },
-    referralsGiven,
+    referralsGiven: referralsGiven.map((item) => ({
+      ...item,
+      counterparty: displayCounterparty(item.toMember, item.toExternalName, item.toExternalBusiness),
+    })),
     referralsReceived,
-    thankYousLogged,
+    thankYousLogged: thankYousLogged.map((item) => ({
+      ...item,
+      counterparty: displayCounterparty(item.toMember, item.toExternalName, item.toExternalBusiness),
+    })),
     thankYousReceived,
     oneToOnes,
     visitorsAdded,
