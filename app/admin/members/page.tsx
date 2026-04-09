@@ -56,22 +56,6 @@ export default async function AdminMembersPage({
             <input className="input" name="businessName" required />
           </label>
           <label className="label">
-            Email
-            <input className="input" name="email" type="email" />
-          </label>
-          <label className="label">
-            Phone
-            <input className="input" name="phone" />
-          </label>
-          <label className="label">
-            Breakfast choice
-            <input className="input" name="breakfastChoice" />
-          </label>
-          <label className="label">
-            Dietary notes
-            <input className="input" name="dietaryNotes" />
-          </label>
-          <label className="label">
             PIN
             <input className="input" name="pin" inputMode="numeric" placeholder="Leave blank to auto-generate" />
           </label>
@@ -86,6 +70,7 @@ export default async function AdminMembersPage({
             Create member
           </button>
         </form>
+        <p className="muted smallText">Members can add their own email, phone and breakfast details later in Details.</p>
       </section>
 
       <section className="card stack">

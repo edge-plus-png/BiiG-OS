@@ -92,7 +92,44 @@ export async function changeOwnPinAction(formData: FormData) {
     data: { pinHash: await hashPin(parsed.newPin) },
   });
 
-  redirect("/pin?saved=1");
+  redirect("/pin?saved=pin");
+}
+
+export async function updateOwnDetailsAction(formData: FormData) {
+  const member = await requireMember();
+  const parsed = z
+    .object({
+      name: z.string().min(1),
+      businessName: z.string().min(1),
+      email: z.string().email().optional(),
+      phone: z.string().optional(),
+      breakfastChoice: z.string().optional(),
+      dietaryNotes: z.string().optional(),
+    })
+    .parse({
+      name: formData.get("name"),
+      businessName: formData.get("businessName"),
+      email: formData.get("email") || undefined,
+      phone: formData.get("phone"),
+      breakfastChoice: formData.get("breakfastChoice"),
+      dietaryNotes: formData.get("dietaryNotes"),
+    });
+
+  await prisma.member.update({
+    where: { id: member.id },
+    data: {
+      name: parsed.name,
+      businessName: parsed.businessName,
+      email: parsed.email || null,
+      phone: parsed.phone || null,
+      breakfastChoice: parsed.breakfastChoice || null,
+      dietaryNotes: parsed.dietaryNotes || null,
+    },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/pin");
+  redirect("/pin?saved=details");
 }
 
 export async function saveNonAttendanceAction(formData: FormData) {
