@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { deleteThankYouAction, updateThankYouAction } from "@/lib/actions";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -113,9 +114,9 @@ export default async function AdminThankYouEditPage({
         <form action={deleteThankYouAction} className="stack">
           <input type="hidden" name="thankYouId" value={thankYou.id} />
           <input type="hidden" name="returnTo" value={returnTo} />
-          <button className="dangerButton" type="submit">
+          <ConfirmSubmitButton className="dangerButton" message="Delete this thank you? This cannot be undone.">
             Delete thank you
-          </button>
+          </ConfirmSubmitButton>
         </form>
       </section>
     </AppShell>

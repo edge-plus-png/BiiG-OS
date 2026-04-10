@@ -32,8 +32,6 @@ export default async function NewReferralPage({
                     {item.name} - {item.businessName}
                   </option>
                 ))}
-              <option value="external:visitor">Visitor</option>
-              <option value="external:ex-member">Ex-member</option>
             </select>
           </label>
           <label className="label">
