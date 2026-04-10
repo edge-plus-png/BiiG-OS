@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { ReferralStatus } from "@prisma/client";
 import { AppShell } from "@/components/AppShell";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { updateReferralAction, deleteReferralAction } from "@/lib/actions";
 import { requireAdmin } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
@@ -13,16 +14,9 @@ function getSafeReturnPath(value?: string) {
 
 function recipientValue(
   recipient: { id: string } | null,
-  externalName?: string | null,
 ) {
   if (recipient) {
     return `member:${recipient.id}`;
-  }
-  if (externalName === "Visitor") {
-    return "external:visitor";
-  }
-  if (externalName === "Ex-member") {
-    return "external:ex-member";
   }
   return "";
 }
@@ -79,18 +73,25 @@ export default async function AdminReferralEditPage({
             <select
               className="select"
               name="recipient"
-              defaultValue={recipientValue(referral.toMember, referral.toExternalName)}
+              defaultValue={recipientValue(referral.toMember)}
+              required
             >
+              <option value="" disabled>
+                Choose who this is for
+              </option>
               {members.map((member) => (
                 <option key={member.id} value={`member:${member.id}`}>
                   {member.name} - {member.businessName}
                   {member.isActive ? "" : " (Archived)"}
                 </option>
               ))}
-              <option value="external:visitor">Visitor</option>
-              <option value="external:ex-member">Ex-member</option>
             </select>
           </label>
+          {!referral.toMemberId && referral.toExternalName ? (
+            <p className="muted smallText">
+              This is a legacy external referral entry. Please choose the correct member before saving.
+            </p>
+          ) : null}
 
           <label className="label">
             Lead name
@@ -124,9 +125,9 @@ export default async function AdminReferralEditPage({
         <form action={deleteReferralAction} className="stack">
           <input type="hidden" name="referralId" value={referral.id} />
           <input type="hidden" name="returnTo" value={returnTo} />
-          <button className="dangerButton" type="submit">
+          <ConfirmSubmitButton className="dangerButton" message="Delete this referral? This cannot be undone.">
             Delete referral
-          </button>
+          </ConfirmSubmitButton>
         </form>
       </section>
     </AppShell>

@@ -192,7 +192,7 @@ export async function saveReferralAction(formData: FormData) {
   const member = await requireMember();
   const parsed = z
     .object({
-      recipient: z.string().min(1).refine((value) => value === "external:visitor" || value === "external:ex-member" || value.startsWith("member:"), {
+      recipient: z.string().min(1).refine((value) => value.startsWith("member:"), {
         message: "Choose who the referral is for",
       }),
       leadName: z.string().min(1),
@@ -214,13 +214,11 @@ export async function saveReferralAction(formData: FormData) {
 
   const recipient = parsed.data.recipient;
   const toMemberId = recipient.startsWith("member:") ? recipient.replace("member:", "") : undefined;
-  const toExternalName = recipient === "external:visitor" ? "Visitor" : recipient === "external:ex-member" ? "Ex-member" : undefined;
 
   await prisma.referral.create({
     data: {
       fromMemberId: member.id,
       toMemberId,
-      toExternalName,
       leadName: parsed.data.leadName,
       leadContact: parsed.data.leadContact || null,
       notes: parsed.data.notes || null,
@@ -824,7 +822,7 @@ export async function updateReferralAction(formData: FormData) {
   const parsed = z
     .object({
       referralId: z.string().uuid(),
-      recipient: z.string().min(1).refine((value) => value === "external:visitor" || value === "external:ex-member" || value.startsWith("member:"), {
+      recipient: z.string().min(1).refine((value) => value.startsWith("member:"), {
         message: "Choose who the referral is for",
       }),
       leadName: z.string().min(1),
@@ -845,13 +843,12 @@ export async function updateReferralAction(formData: FormData) {
 
   const recipient = parsed.recipient;
   const toMemberId = recipient.startsWith("member:") ? recipient.replace("member:", "") : undefined;
-  const toExternalName = recipient === "external:visitor" ? "Visitor" : recipient === "external:ex-member" ? "Ex-member" : undefined;
 
   await prisma.referral.update({
     where: { id: parsed.referralId },
     data: {
       toMemberId,
-      toExternalName,
+      toExternalName: null,
       toExternalBusiness: null,
       leadName: parsed.leadName,
       leadContact: parsed.leadContact || null,

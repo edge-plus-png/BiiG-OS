@@ -2,6 +2,7 @@ import Link from "next/link";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import {
   deleteIntroductionAction,
   deleteOneToOneAction,
@@ -132,9 +133,9 @@ export function MemberActivityView({
                   <form action={deleteReferralAction} className="inlineActionForm">
                     <input type="hidden" name="referralId" value={item.id} />
                     <input type="hidden" name="returnTo" value={adminManagePath} />
-                    <button className="dangerButton compactButton" type="submit">
+                    <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this referral? This cannot be undone.">
                       Delete
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </>
               ) : undefined,
@@ -161,9 +162,9 @@ export function MemberActivityView({
                   <form action={deleteThankYouAction} className="inlineActionForm">
                     <input type="hidden" name="thankYouId" value={item.id} />
                     <input type="hidden" name="returnTo" value={adminManagePath} />
-                    <button className="dangerButton compactButton" type="submit">
+                    <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this thank you? This cannot be undone.">
                       Delete
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </>
               ) : undefined,
@@ -183,9 +184,9 @@ export function MemberActivityView({
                 <form action={deleteIntroductionAction} className="inlineActionForm">
                   <input type="hidden" name="introductionId" value={item.id} />
                   <input type="hidden" name="returnTo" value={adminManagePath} />
-                  <button className="dangerButton compactButton" type="submit">
+                  <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this introduction? This cannot be undone.">
                     Delete
-                  </button>
+                  </ConfirmSubmitButton>
                 </form>
               ) : undefined,
             }))}
@@ -204,9 +205,9 @@ export function MemberActivityView({
                 <form action={deleteTestimonialAction} className="inlineActionForm">
                   <input type="hidden" name="testimonialId" value={item.id} />
                   <input type="hidden" name="returnTo" value={adminManagePath} />
-                  <button className="dangerButton compactButton" type="submit">
+                  <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this testimonial? This cannot be undone.">
                     Delete
-                  </button>
+                  </ConfirmSubmitButton>
                 </form>
               ) : undefined,
             }))}
@@ -225,9 +226,9 @@ export function MemberActivityView({
                 <form action={deleteVisitorAction} className="inlineActionForm">
                   <input type="hidden" name="visitorId" value={item.id} />
                   <input type="hidden" name="returnTo" value={adminManagePath} />
-                  <button className="dangerButton compactButton" type="submit">
+                  <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this visitor entry? This cannot be undone.">
                     Delete
-                  </button>
+                  </ConfirmSubmitButton>
                 </form>
               ) : undefined,
             }))}
@@ -271,9 +272,9 @@ export function MemberActivityView({
                       <form action={deleteReferralAction} className="inlineActionForm">
                         <input type="hidden" name="referralId" value={item.id} />
                         <input type="hidden" name="returnTo" value={adminManagePath} />
-                        <button className="dangerButton compactButton" type="submit">
+                        <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this referral? This cannot be undone.">
                           Delete
-                        </button>
+                        </ConfirmSubmitButton>
                       </form>
                     </>
                   ) : null}
@@ -302,9 +303,9 @@ export function MemberActivityView({
                   <form action={deleteThankYouAction} className="inlineActionForm">
                     <input type="hidden" name="thankYouId" value={item.id} />
                     <input type="hidden" name="returnTo" value={adminManagePath} />
-                    <button className="dangerButton compactButton" type="submit">
+                    <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this thank you? This cannot be undone.">
                       Delete
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </>
               ) : undefined,
@@ -324,9 +325,9 @@ export function MemberActivityView({
                 <form action={deleteTestimonialAction} className="inlineActionForm">
                   <input type="hidden" name="testimonialId" value={item.id} />
                   <input type="hidden" name="returnTo" value={adminManagePath} />
-                  <button className="dangerButton compactButton" type="submit">
+                  <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this testimonial? This cannot be undone.">
                     Delete
-                  </button>
+                  </ConfirmSubmitButton>
                 </form>
               ) : undefined,
             }))}
@@ -352,9 +353,9 @@ export function MemberActivityView({
                   <form action={deleteOneToOneAction} className="inlineActionForm">
                     <input type="hidden" name="oneToOneId" value={item.id} />
                     <input type="hidden" name="returnTo" value={adminManagePath} />
-                    <button className="dangerButton compactButton" type="submit">
+                    <ConfirmSubmitButton className="dangerButton compactButton" message="Delete this 1-2-1? This cannot be undone.">
                       Delete
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 ) : undefined,
               };
