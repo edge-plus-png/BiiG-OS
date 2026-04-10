@@ -597,10 +597,6 @@ button {
     grid-template-columns: 1fr;
   }
 
-  .activitySummaryRow {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .snapshotHeader {
     grid-template-columns: 1fr;
     display: grid;
@@ -612,7 +608,28 @@ button {
   }
 
   .snapshotColumns {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .snapshotLaneHeader {
+    font-size: 0.72rem;
+  }
+
+  .snapshotCard {
+    padding: 12px;
+  }
+
+  .snapshotCard .metricValue {
+    font-size: 1.2rem;
+  }
+
+  .snapshotSharedCard {
+    max-width: none;
+  }
+
+  .activitySummaryRow {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .actionGrid {
