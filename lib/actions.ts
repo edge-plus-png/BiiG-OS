@@ -312,13 +312,11 @@ export async function saveVisitorAction(formData: FormData) {
       meetingId: z.string().uuid(),
       visitorName: z.string().min(1),
       visitorBusiness: z.string().optional(),
-      likelihood: z.nativeEnum(VisitorLikelihood),
     })
     .parse({
       meetingId: formData.get("meetingId"),
       visitorName: formData.get("visitorName"),
       visitorBusiness: formData.get("visitorBusiness"),
-      likelihood: formData.get("likelihood"),
     });
 
   await prisma.visitor.create({
@@ -327,7 +325,7 @@ export async function saveVisitorAction(formData: FormData) {
       meetingId: parsed.meetingId,
       visitorName: parsed.visitorName,
       visitorBusiness: parsed.visitorBusiness || null,
-      likelihood: parsed.likelihood,
+      likelihood: VisitorLikelihood.HIGH,
     },
   });
 
