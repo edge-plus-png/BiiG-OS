@@ -1,4 +1,4 @@
-import { MeetingType, Prisma, SpeakerStatus } from "@prisma/client";
+import { MeetingType, Prisma, ReferralStatus, SpeakerStatus } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { ensureSchedule } from "@/lib/schedule";
 import { formatMeetingDate, hasCutoffPassed, nonAttendanceCutoff, speakerConfirmCutoff } from "@/lib/time";
@@ -222,6 +222,22 @@ export async function getHomeSpeakerData(memberId: string) {
         }
       : null,
   };
+}
+
+export async function getHomeReferralReviewData(memberId: string) {
+  const referrals = await prisma.referral.findMany({
+    where: {
+      toMemberId: memberId,
+      status: ReferralStatus.GIVEN,
+    },
+    include: {
+      fromMember: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+  });
+
+  return referrals;
 }
 
 export async function getRotaData() {
