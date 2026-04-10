@@ -30,6 +30,10 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
 }
 
+body > * {
+  max-width: 100%;
+}
+
 a {
   color: inherit;
   text-decoration: none;
@@ -354,12 +358,15 @@ button {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .snapshotLane {
   display: grid;
   gap: 10px;
   min-width: 0;
+  max-width: 100%;
 }
 
 .snapshotLaneHeader {
@@ -646,11 +653,13 @@ button {
 
   .appNav {
     position: fixed;
-    left: max(12px, env(safe-area-inset-left));
-    right: max(12px, env(safe-area-inset-right));
+    left: 12px;
+    right: 12px;
     bottom: max(12px, env(safe-area-inset-bottom));
     top: auto;
     grid-template-columns: repeat(5, minmax(0, 1fr));
+    width: auto;
+    max-width: calc(100vw - 24px);
   }
 
   .appNavItem {

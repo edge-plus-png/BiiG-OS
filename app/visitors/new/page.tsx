@@ -25,14 +25,6 @@ export default async function NewVisitorPage() {
             Visitor business
             <input className="input" name="visitorBusiness" />
           </label>
-          <label className="label">
-            Likelihood
-            <select className="select" name="likelihood" defaultValue="HIGH">
-              <option value="HIGH">High</option>
-              <option value="MEDIUM">Medium</option>
-              <option value="LOW">Low</option>
-            </select>
-          </label>
           <button className="primaryButton" type="submit">
             Save visitor
           </button>
