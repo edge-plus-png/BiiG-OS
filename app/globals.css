@@ -342,12 +342,36 @@ button {
 
 .snapshotGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
 .snapshotCard {
   min-width: 0;
+}
+
+.snapshotColumns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.snapshotLane {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.snapshotLaneHeader {
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.snapshotSharedCard {
+  max-width: 220px;
 }
 
 .splitMetric {
@@ -584,7 +608,11 @@ button {
   }
 
   .snapshotGrid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
+  }
+
+  .snapshotColumns {
+    grid-template-columns: 1fr;
   }
 
   .actionGrid {

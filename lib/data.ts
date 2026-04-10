@@ -68,7 +68,26 @@ export async function getHomeMetricsData(memberId: string) {
   yearStart.setMonth(0, 1);
   yearStart.setHours(0, 0, 0, 0);
 
-  const [monthReferralPassed, monthReferralReceived, monthThankYouReceived, monthVisitors, monthOneToOnes, monthTestimonialsGiven, monthIntroductionsGiven, yearReferralPassed, yearReferralReceived, yearThankYouReceived, yearVisitors, yearOneToOnes, yearTestimonialsGiven, yearIntroductionsGiven] = await Promise.all([
+  const [
+    monthReferralPassed,
+    monthReferralReceived,
+    monthThankYouReceived,
+    monthVisitors,
+    monthOneToOnes,
+    monthTestimonialsGiven,
+    monthTestimonialsReceived,
+    monthIntroductionsGiven,
+    monthIntroductionsReceived,
+    yearReferralPassed,
+    yearReferralReceived,
+    yearThankYouReceived,
+    yearVisitors,
+    yearOneToOnes,
+    yearTestimonialsGiven,
+    yearTestimonialsReceived,
+    yearIntroductionsGiven,
+    yearIntroductionsReceived,
+  ] = await Promise.all([
     prisma.referral.count({
       where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
     }),
@@ -91,8 +110,14 @@ export async function getHomeMetricsData(memberId: string) {
     prisma.testimonial.count({
       where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
     }),
+    prisma.testimonial.count({
+      where: { toMemberId: memberId, createdAt: { gte: monthStart } },
+    }),
     prisma.introduction.count({
       where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
+    }),
+    prisma.introduction.count({
+      where: { toMemberId: memberId, createdAt: { gte: monthStart } },
     }),
     prisma.referral.count({
       where: { fromMemberId: memberId, createdAt: { gte: yearStart } },
@@ -116,8 +141,14 @@ export async function getHomeMetricsData(memberId: string) {
     prisma.testimonial.count({
       where: { fromMemberId: memberId, createdAt: { gte: yearStart } },
     }),
+    prisma.testimonial.count({
+      where: { toMemberId: memberId, createdAt: { gte: yearStart } },
+    }),
     prisma.introduction.count({
       where: { fromMemberId: memberId, createdAt: { gte: yearStart } },
+    }),
+    prisma.introduction.count({
+      where: { toMemberId: memberId, createdAt: { gte: yearStart } },
     }),
   ]);
 
@@ -130,7 +161,9 @@ export async function getHomeMetricsData(memberId: string) {
         visitors: monthVisitors,
         oneToOnes: monthOneToOnes,
         testimonialsGiven: monthTestimonialsGiven,
+        testimonialsReceived: monthTestimonialsReceived,
         introductionsGiven: monthIntroductionsGiven,
+        introductionsReceived: monthIntroductionsReceived,
       },
       yearToDate: {
         referralsPassed: yearReferralPassed,
@@ -139,7 +172,9 @@ export async function getHomeMetricsData(memberId: string) {
         visitors: yearVisitors,
         oneToOnes: yearOneToOnes,
         testimonialsGiven: yearTestimonialsGiven,
+        testimonialsReceived: yearTestimonialsReceived,
         introductionsGiven: yearIntroductionsGiven,
+        introductionsReceived: yearIntroductionsReceived,
       },
     },
     metricDefinitions: {

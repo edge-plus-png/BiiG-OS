@@ -34,45 +34,59 @@ export function HomeSnapshot({ data }: { data: MetricsData }) {
         </div>
       </div>
 
-      <div className="snapshotGrid">
-        <div className="metricCard snapshotCard">
-          <span className="splitMetricLabel">Given</span>
-          <span className="muted smallText">Referrals passed</span>
-          <span className="metricValue">{metrics.referralsPassed}</span>
+      <div className="snapshotColumns">
+        <div className="snapshotLane">
+          <div className="snapshotLaneHeader">Given</div>
+          <div className="snapshotGrid">
+            <div className="metricCard snapshotCard">
+              <span className="muted smallText">Referrals passed</span>
+              <span className="metricValue">{metrics.referralsPassed}</span>
+            </div>
+            <div className="metricCard snapshotCard">
+              <span className="muted smallText">Visitors brought</span>
+              <span className="metricValue">{metrics.visitors}</span>
+            </div>
+            <div className="metricCard snapshotCard">
+              <span className="muted smallText">Testimonials given</span>
+              <span className="metricValue">{metrics.testimonialsGiven}</span>
+            </div>
+            <div className="metricCard snapshotCard">
+              <span className="muted smallText">Introductions made</span>
+              <span className="metricValue">{metrics.introductionsGiven}</span>
+            </div>
+          </div>
         </div>
-        <div className="metricCard snapshotCard">
-          <span className="splitMetricLabel">Received</span>
-          <span className="muted smallText">Referrals received</span>
-          <span className="metricValue">{metrics.referralsReceived}</span>
-        </div>
-        <div className="metricCard snapshotCard">
-          <span className="splitMetricLabel">Shared</span>
-          <span className="muted smallText">1-2-1s</span>
-          <span className="metricValue">{metrics.oneToOnes}</span>
-        </div>
-        <div className="metricCard snapshotCard">
-          <span className="splitMetricLabel">Received</span>
-          <span className="muted smallText">Business received</span>
-          <span className="metricValue">{currency(metrics.thankYouReceived)}</span>
-        </div>
-        <div className="metricCard snapshotCard">
-          <span className="splitMetricLabel">Given</span>
-          <span className="muted smallText">Visitors brought</span>
-          <span className="metricValue">{metrics.visitors}</span>
-        </div>
-        <div className="metricCard snapshotCard">
-          <span className="splitMetricLabel">Given</span>
-          <span className="muted smallText">Testimonials</span>
-          <span className="metricValue">{metrics.testimonialsGiven}</span>
-        </div>
-        <div className="metricCard snapshotCard">
-          <span className="splitMetricLabel">Given</span>
-          <span className="muted smallText">Introductions</span>
-          <span className="metricValue">{metrics.introductionsGiven}</span>
+
+        <div className="snapshotLane">
+          <div className="snapshotLaneHeader">Received</div>
+          <div className="snapshotGrid">
+            <div className="metricCard snapshotCard">
+              <span className="muted smallText">Referrals received</span>
+              <span className="metricValue">{metrics.referralsReceived}</span>
+            </div>
+            <div className="metricCard snapshotCard">
+              <span className="muted smallText">Business received</span>
+              <span className="metricValue">{currency(metrics.thankYouReceived)}</span>
+            </div>
+            <div className="metricCard snapshotCard">
+              <span className="muted smallText">Testimonials received</span>
+              <span className="metricValue">{metrics.testimonialsReceived}</span>
+            </div>
+            <div className="metricCard snapshotCard">
+              <span className="muted smallText">Introductions received</span>
+              <span className="metricValue">{metrics.introductionsReceived}</span>
+            </div>
+          </div>
         </div>
       </div>
 
-      <p className="muted smallText">Snapshot now shows whether each item is given, received or shared. 1-2-1s count for both members.</p>
+      <div className="metricCard snapshotCard snapshotSharedCard">
+        <span className="splitMetricLabel">Shared</span>
+        <span className="muted smallText">1-2-1s</span>
+        <span className="metricValue">{metrics.oneToOnes}</span>
+      </div>
+
+      <p className="muted smallText">Snapshot now groups activity into given, received and shared. 1-2-1s count for both members.</p>
     </section>
   );
 }
