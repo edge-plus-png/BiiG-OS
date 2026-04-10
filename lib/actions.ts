@@ -179,14 +179,16 @@ export async function saveReferralAction(formData: FormData) {
   const member = await requireMember();
   const parsed = z
     .object({
-      toMemberId: z.string().uuid(),
+      recipient: z.string().min(1).refine((value) => value === "external:visitor" || value === "external:ex-member" || value.startsWith("member:"), {
+        message: "Choose who the referral is for",
+      }),
       leadName: z.string().min(1),
       leadContact: z.string().optional(),
       notes: z.string().optional(),
       meetingId: z.string().uuid().optional(),
     })
     .safeParse({
-      toMemberId: formData.get("toMemberId"),
+      recipient: formData.get("recipient"),
       leadName: formData.get("leadName"),
       leadContact: formData.get("leadContact"),
       notes: formData.get("notes"),
@@ -194,13 +196,18 @@ export async function saveReferralAction(formData: FormData) {
     });
 
   if (!parsed.success) {
-    redirect("/referrals/new?error=Choose%20a%20current%20member");
+    redirect("/referrals/new?error=Choose%20who%20the%20referral%20is%20for");
   }
+
+  const recipient = parsed.data.recipient;
+  const toMemberId = recipient.startsWith("member:") ? recipient.replace("member:", "") : undefined;
+  const toExternalName = recipient === "external:visitor" ? "Visitor" : recipient === "external:ex-member" ? "Ex-member" : undefined;
 
   await prisma.referral.create({
     data: {
       fromMemberId: member.id,
-      toMemberId: parsed.data.toMemberId,
+      toMemberId,
+      toExternalName,
       leadName: parsed.data.leadName,
       leadContact: parsed.data.leadContact || null,
       notes: parsed.data.notes || null,

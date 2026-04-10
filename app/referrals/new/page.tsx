@@ -20,18 +20,20 @@ export default async function NewReferralPage({
         <form action={saveReferralAction} className="formGrid">
           {nextMeeting ? <input type="hidden" name="meetingId" value={nextMeeting.id} /> : null}
           <label className="label">
-            To member
-            <select className="select" name="toMemberId" required defaultValue="">
+            Referral for
+            <select className="select" name="recipient" required defaultValue="">
               <option value="" disabled>
-                Choose a member
+                Choose who this is for
               </option>
               {members
                 .filter((item) => item.id !== member.id)
                 .map((item) => (
-                  <option key={item.id} value={item.id}>
+                  <option key={item.id} value={`member:${item.id}`}>
                     {item.name} - {item.businessName}
                   </option>
                 ))}
+              <option value="external:visitor">Visitor</option>
+              <option value="external:ex-member">Ex-member</option>
             </select>
           </label>
           <label className="label">
