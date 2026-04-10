@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CalendarX2, HandCoins, Link2, MessageSquareShare, Quote, UserPlus, Users } from "lucide-react";
 import { AppShell } from "@/components/AppShell";
 import { HomeMetrics, HomeMetricsFallback } from "@/components/home/HomeMetrics";
+import { HomeReferralReview, HomeReferralReviewFallback } from "@/components/home/HomeReferralReview";
 import { HomeSpeaker, HomeSpeakerFallback } from "@/components/home/HomeSpeaker";
 import { Notice } from "@/components/Notice";
 import { StatusPill } from "@/components/StatusPill";
@@ -13,6 +14,8 @@ import { formatMeetingDate } from "@/lib/time";
 const savedMessages: Record<string, string> = {
   attendance: "Non-attendance saved.",
   referral: "Referral saved.",
+  "referral-live": "Referral kept live.",
+  "referral-lost": "Referral marked as not proceeding.",
   thankyou: "Thank you saved.",
   "121": "1-2-1 saved.",
   visitor: "Visitor saved.",
@@ -23,7 +26,7 @@ const savedMessages: Record<string, string> = {
 export default async function HomePage({
   searchParams,
 }: {
-  searchParams: Promise<{ saved?: string }>;
+  searchParams: Promise<{ saved?: string; error?: string }>;
 }) {
   const member = await requireMember();
   const [data, params] = await Promise.all([getHomeHeaderData(member.id), searchParams]);
@@ -82,6 +85,7 @@ export default async function HomePage({
   return (
     <AppShell member={member}>
       {params.saved && savedMessages[params.saved] ? <Notice tone="success">{savedMessages[params.saved]}</Notice> : null}
+      {params.error ? <Notice tone="error">{params.error}</Notice> : null}
       {data.nextMeeting ? (
         <section className="card heroCard stack">
           <div className="heroHeader">
@@ -108,6 +112,10 @@ export default async function HomePage({
 
       <Suspense fallback={<HomeMetricsFallback />}>
         <HomeMetrics memberId={member.id} />
+      </Suspense>
+
+      <Suspense fallback={<HomeReferralReviewFallback />}>
+        <HomeReferralReview memberId={member.id} />
       </Suspense>
 
       <section className="card stack">

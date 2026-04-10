@@ -301,11 +301,15 @@ export async function updateOwnReferralStatusAction(formData: FormData) {
     .object({
       referralId: z.string().uuid(),
       status: z.enum([ReferralStatus.GIVEN, ReferralStatus.LOST]),
+      returnTo: z.string().optional(),
     })
     .parse({
       referralId: formData.get("referralId"),
       status: formData.get("status"),
+      returnTo: formData.get("returnTo") || undefined,
     });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/activity");
 
   const referral = await prisma.referral.findUnique({
     where: { id: parsed.referralId },
@@ -313,11 +317,11 @@ export async function updateOwnReferralStatusAction(formData: FormData) {
   });
 
   if (!referral || referral.toMemberId !== member.id) {
-    redirect("/activity?error=Referral%20not%20found");
+    redirect(withQuery(returnTo, "error", "Referral not found"));
   }
 
   if (referral.status === ReferralStatus.CONVERTED) {
-    redirect("/activity?error=Successful%20referrals%20should%20be%20changed%20via%20leadership");
+    redirect(withQuery(returnTo, "error", "Successful referrals should be changed via leadership"));
   }
 
   await prisma.referral.update({
@@ -328,7 +332,7 @@ export async function updateOwnReferralStatusAction(formData: FormData) {
   revalidatePath("/");
   revalidatePath("/activity");
   revalidatePath("/admin");
-  redirect(withQuery("/activity", "saved", parsed.status === ReferralStatus.LOST ? "referral-lost" : "referral-live"));
+  redirect(withQuery(returnTo, "saved", parsed.status === ReferralStatus.LOST ? "referral-lost" : "referral-live"));
 }
 
 export async function saveOneToOneAction(formData: FormData) {
