@@ -71,7 +71,7 @@ export async function getHomeMetricsData(memberId: string) {
   const [
     monthReferralPassed,
     monthReferralReceived,
-    monthThankYouReceived,
+    monthBusinessReceived,
     monthVisitors,
     monthOneToOnes,
     monthTestimonialsGiven,
@@ -80,7 +80,7 @@ export async function getHomeMetricsData(memberId: string) {
     monthIntroductionsReceived,
     yearReferralPassed,
     yearReferralReceived,
-    yearThankYouReceived,
+    yearBusinessReceived,
     yearVisitors,
     yearOneToOnes,
     yearTestimonialsGiven,
@@ -95,7 +95,7 @@ export async function getHomeMetricsData(memberId: string) {
       where: { toMemberId: memberId, createdAt: { gte: monthStart } },
     }),
     prisma.thankYou.aggregate({
-      where: { toMemberId: memberId, createdAt: { gte: monthStart } },
+      where: { fromMemberId: memberId, createdAt: { gte: monthStart } },
       _sum: { amount: true },
     }),
     prisma.visitor.count({
@@ -126,7 +126,7 @@ export async function getHomeMetricsData(memberId: string) {
       where: { toMemberId: memberId, createdAt: { gte: yearStart } },
     }),
     prisma.thankYou.aggregate({
-      where: { toMemberId: memberId, createdAt: { gte: yearStart } },
+      where: { fromMemberId: memberId, createdAt: { gte: yearStart } },
       _sum: { amount: true },
     }),
     prisma.visitor.count({
@@ -157,7 +157,7 @@ export async function getHomeMetricsData(memberId: string) {
       monthToDate: {
         referralsPassed: monthReferralPassed,
         referralsReceived: monthReferralReceived,
-        thankYouReceived: Number(monthThankYouReceived._sum.amount ?? 0),
+        thankYouReceived: Number(monthBusinessReceived._sum.amount ?? 0),
         visitors: monthVisitors,
         oneToOnes: monthOneToOnes,
         testimonialsGiven: monthTestimonialsGiven,
@@ -168,7 +168,7 @@ export async function getHomeMetricsData(memberId: string) {
       yearToDate: {
         referralsPassed: yearReferralPassed,
         referralsReceived: yearReferralReceived,
-        thankYouReceived: Number(yearThankYouReceived._sum.amount ?? 0),
+        thankYouReceived: Number(yearBusinessReceived._sum.amount ?? 0),
         visitors: yearVisitors,
         oneToOnes: yearOneToOnes,
         testimonialsGiven: yearTestimonialsGiven,
@@ -479,7 +479,7 @@ export async function getMemberActivityDataWithFilters(
       referralsReceived: referralsReceived.length,
       thankYousLogged: thankYousLogged.length,
       thankYousReceived: thankYousReceived.length,
-      businessReceived: thankYousReceived.reduce((sum, item) => sum + Number(item.amount), 0),
+      businessReceived: thankYousLogged.reduce((sum, item) => sum + Number(item.amount), 0),
       oneToOnes: oneToOnes.length,
       visitorsAdded: visitorsAdded.length,
       testimonialsGiven: testimonialsGiven.length,
