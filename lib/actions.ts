@@ -3,7 +3,7 @@
 import { randomInt } from "crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { MeetingType, MemberRole, Prisma, SpeakerStatus, VisitorLikelihood } from "@prisma/client";
+import { MeetingType, MemberRole, Prisma, ReferralStatus, SpeakerStatus, VisitorLikelihood } from "@prisma/client";
 import { z } from "zod";
 import {
   assertLoginAllowed,
@@ -22,6 +22,19 @@ const loginSchema = z.object({
   memberId: z.string().uuid(),
   pin: z.string().min(4).max(12),
 });
+
+function getSafeReturnPath(value?: string | null, fallback = "/admin/members") {
+  if (!value || !value.startsWith("/")) {
+    return fallback;
+  }
+  return value;
+}
+
+function withQuery(path: string, key: string, value: string) {
+  const url = new URL(path, "http://biig.local");
+  url.searchParams.set(key, value);
+  return `${url.pathname}${url.search}`;
+}
 
 export async function loginAction(formData: FormData) {
   const parsed = loginSchema.safeParse({
@@ -250,31 +263,74 @@ export async function saveThankYouAction(formData: FormData) {
   const toMemberId = recipient.startsWith("member:") ? recipient.replace("member:", "") : undefined;
   const toExternalName = recipient === "external:visitor" ? "Visitor" : recipient === "external:ex-member" ? "Ex-member" : undefined;
 
-  if (parsed.data.referralId) {
-    const referral = await prisma.referral.findUnique({
-      where: { id: parsed.data.referralId },
-      select: { fromMemberId: true, toMemberId: true },
-    });
+  await prisma.$transaction(async (tx) => {
+    if (parsed.data.referralId) {
+      const referral = await tx.referral.findUnique({
+        where: { id: parsed.data.referralId },
+        select: { id: true, fromMemberId: true, toMemberId: true },
+      });
 
-    if (!referral || referral.fromMemberId !== toMemberId || referral.toMemberId !== member.id) {
-      redirect("/thank-you/new?error=Only%20matching%20referrals%20for%20this%20member%20can%20be%20linked");
+      if (!referral || referral.fromMemberId !== toMemberId || referral.toMemberId !== member.id) {
+        redirect("/thank-you/new?error=Only%20matching%20referrals%20for%20this%20member%20can%20be%20linked");
+      }
+
+      await tx.referral.update({
+        where: { id: referral.id },
+        data: { status: ReferralStatus.CONVERTED },
+      });
     }
-  }
 
-  await prisma.thankYou.create({
-    data: {
-      fromMemberId: member.id,
-      toMemberId,
-      toExternalName,
-      referralId: parsed.data.referralId || null,
-      amount: parsed.data.amount,
-      notes: parsed.data.notes || null,
-    },
+    await tx.thankYou.create({
+      data: {
+        fromMemberId: member.id,
+        toMemberId,
+        toExternalName,
+        referralId: parsed.data.referralId || null,
+        amount: parsed.data.amount,
+        notes: parsed.data.notes || null,
+      },
+    });
   });
 
   revalidatePath("/");
   revalidatePath("/admin");
   redirect("/?saved=thankyou");
+}
+
+export async function updateOwnReferralStatusAction(formData: FormData) {
+  const member = await requireMember();
+  const parsed = z
+    .object({
+      referralId: z.string().uuid(),
+      status: z.enum([ReferralStatus.GIVEN, ReferralStatus.LOST]),
+    })
+    .parse({
+      referralId: formData.get("referralId"),
+      status: formData.get("status"),
+    });
+
+  const referral = await prisma.referral.findUnique({
+    where: { id: parsed.referralId },
+    select: { id: true, toMemberId: true, status: true },
+  });
+
+  if (!referral || referral.toMemberId !== member.id) {
+    redirect("/activity?error=Referral%20not%20found");
+  }
+
+  if (referral.status === ReferralStatus.CONVERTED) {
+    redirect("/activity?error=Successful%20referrals%20should%20be%20changed%20via%20leadership");
+  }
+
+  await prisma.referral.update({
+    where: { id: parsed.referralId },
+    data: { status: parsed.status },
+  });
+
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery("/activity", "saved", parsed.status === ReferralStatus.LOST ? "referral-lost" : "referral-live"));
 }
 
 export async function saveOneToOneAction(formData: FormData) {
@@ -761,4 +817,299 @@ export async function deleteMemberAction(formData: FormData) {
 
   revalidatePath("/admin/members");
   redirect("/admin/members?deleted=1");
+}
+
+export async function updateReferralAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      referralId: z.string().uuid(),
+      recipient: z.string().min(1).refine((value) => value === "external:visitor" || value === "external:ex-member" || value.startsWith("member:"), {
+        message: "Choose who the referral is for",
+      }),
+      leadName: z.string().min(1),
+      leadContact: z.string().optional(),
+      notes: z.string().optional(),
+      status: z.nativeEnum(ReferralStatus),
+      returnTo: z.string().optional(),
+    })
+    .parse({
+      referralId: formData.get("referralId"),
+      recipient: formData.get("recipient"),
+      leadName: formData.get("leadName"),
+      leadContact: formData.get("leadContact"),
+      notes: formData.get("notes"),
+      status: formData.get("status"),
+      returnTo: formData.get("returnTo") || undefined,
+    });
+
+  const recipient = parsed.recipient;
+  const toMemberId = recipient.startsWith("member:") ? recipient.replace("member:", "") : undefined;
+  const toExternalName = recipient === "external:visitor" ? "Visitor" : recipient === "external:ex-member" ? "Ex-member" : undefined;
+
+  await prisma.referral.update({
+    where: { id: parsed.referralId },
+    data: {
+      toMemberId,
+      toExternalName,
+      toExternalBusiness: null,
+      leadName: parsed.leadName,
+      leadContact: parsed.leadContact || null,
+      notes: parsed.notes || null,
+      status: parsed.status,
+    },
+  });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/admin/members");
+  revalidatePath(returnTo);
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery(returnTo, "saved", "referral-updated"));
+}
+
+export async function deleteReferralAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      referralId: z.string().uuid(),
+      returnTo: z.string().optional(),
+    })
+    .parse({
+      referralId: formData.get("referralId"),
+      returnTo: formData.get("returnTo") || undefined,
+    });
+
+  await prisma.referral.delete({
+    where: { id: parsed.referralId },
+  });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/admin/members");
+  revalidatePath(returnTo);
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery(returnTo, "saved", "referral-deleted"));
+}
+
+export async function updateThankYouAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      thankYouId: z.string().uuid(),
+      recipient: z.string().min(1).refine((value) => value === "external:visitor" || value === "external:ex-member" || value.startsWith("member:"), {
+        message: "Choose who the thank you is for",
+      }),
+      amount: z.coerce.number().positive(),
+      notes: z.string().optional(),
+      returnTo: z.string().optional(),
+    })
+    .parse({
+      thankYouId: formData.get("thankYouId"),
+      recipient: formData.get("recipient"),
+      amount: formData.get("amount"),
+      notes: formData.get("notes"),
+      returnTo: formData.get("returnTo") || undefined,
+    });
+
+  const recipient = parsed.recipient;
+  const toMemberId = recipient.startsWith("member:") ? recipient.replace("member:", "") : undefined;
+  const toExternalName = recipient === "external:visitor" ? "Visitor" : recipient === "external:ex-member" ? "Ex-member" : undefined;
+  const existing = await prisma.thankYou.findUniqueOrThrow({
+    where: { id: parsed.thankYouId },
+    select: {
+      id: true,
+      fromMemberId: true,
+      referralId: true,
+    },
+  });
+
+  let nextReferralId: string | null = null;
+  if (existing.referralId && toMemberId) {
+    const referral = await prisma.referral.findUnique({
+      where: { id: existing.referralId },
+      select: { id: true, fromMemberId: true, toMemberId: true },
+    });
+
+    if (referral && referral.fromMemberId === toMemberId && referral.toMemberId === existing.fromMemberId) {
+      nextReferralId = referral.id;
+    }
+  }
+
+  await prisma.$transaction(async (tx) => {
+    await tx.thankYou.update({
+      where: { id: parsed.thankYouId },
+      data: {
+        toMemberId,
+        toExternalName,
+        toExternalBusiness: null,
+        referralId: nextReferralId,
+        amount: parsed.amount,
+        notes: parsed.notes || null,
+      },
+    });
+
+    if (existing.referralId && existing.referralId !== nextReferralId) {
+      const remainingLinks = await tx.thankYou.count({
+        where: {
+          referralId: existing.referralId,
+          id: { not: existing.id },
+        },
+      });
+
+      if (remainingLinks === 0) {
+        await tx.referral.update({
+          where: { id: existing.referralId },
+          data: { status: ReferralStatus.GIVEN },
+        });
+      }
+    }
+  });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/admin/members");
+  revalidatePath(returnTo);
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery(returnTo, "saved", "thankyou-updated"));
+}
+
+export async function deleteThankYouAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      thankYouId: z.string().uuid(),
+      returnTo: z.string().optional(),
+    })
+    .parse({
+      thankYouId: formData.get("thankYouId"),
+      returnTo: formData.get("returnTo") || undefined,
+    });
+
+  const existing = await prisma.thankYou.findUniqueOrThrow({
+    where: { id: parsed.thankYouId },
+    select: { id: true, referralId: true },
+  });
+
+  await prisma.$transaction(async (tx) => {
+    await tx.thankYou.delete({
+      where: { id: parsed.thankYouId },
+    });
+
+    if (existing.referralId) {
+      const remainingLinks = await tx.thankYou.count({
+        where: { referralId: existing.referralId },
+      });
+
+      if (remainingLinks === 0) {
+        await tx.referral.update({
+          where: { id: existing.referralId },
+          data: { status: ReferralStatus.GIVEN },
+        });
+      }
+    }
+  });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/admin/members");
+  revalidatePath(returnTo);
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery(returnTo, "saved", "thankyou-deleted"));
+}
+
+export async function deleteOneToOneAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      oneToOneId: z.string().uuid(),
+      returnTo: z.string().optional(),
+    })
+    .parse({
+      oneToOneId: formData.get("oneToOneId"),
+      returnTo: formData.get("returnTo") || undefined,
+    });
+
+  await prisma.oneToOne.delete({
+    where: { id: parsed.oneToOneId },
+  });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/admin/members");
+  revalidatePath(returnTo);
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery(returnTo, "saved", "one-to-one-deleted"));
+}
+
+export async function deleteVisitorAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      visitorId: z.string().uuid(),
+      returnTo: z.string().optional(),
+    })
+    .parse({
+      visitorId: formData.get("visitorId"),
+      returnTo: formData.get("returnTo") || undefined,
+    });
+
+  await prisma.visitor.delete({
+    where: { id: parsed.visitorId },
+  });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/admin/members");
+  revalidatePath(returnTo);
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery(returnTo, "saved", "visitor-deleted"));
+}
+
+export async function deleteTestimonialAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      testimonialId: z.string().uuid(),
+      returnTo: z.string().optional(),
+    })
+    .parse({
+      testimonialId: formData.get("testimonialId"),
+      returnTo: formData.get("returnTo") || undefined,
+    });
+
+  await prisma.testimonial.delete({
+    where: { id: parsed.testimonialId },
+  });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/admin/members");
+  revalidatePath(returnTo);
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery(returnTo, "saved", "testimonial-deleted"));
+}
+
+export async function deleteIntroductionAction(formData: FormData) {
+  await requireAdmin();
+  const parsed = z
+    .object({
+      introductionId: z.string().uuid(),
+      returnTo: z.string().optional(),
+    })
+    .parse({
+      introductionId: formData.get("introductionId"),
+      returnTo: formData.get("returnTo") || undefined,
+    });
+
+  await prisma.introduction.delete({
+    where: { id: parsed.introductionId },
+  });
+
+  const returnTo = getSafeReturnPath(parsed.returnTo, "/admin/members");
+  revalidatePath(returnTo);
+  revalidatePath("/");
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  redirect(withQuery(returnTo, "saved", "introduction-deleted"));
 }
