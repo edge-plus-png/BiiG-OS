@@ -1,6 +1,16 @@
 import Link from "next/link";
 import { format } from "date-fns";
 import { ArrowLeft } from "lucide-react";
+import type { ReactNode } from "react";
+import {
+  deleteIntroductionAction,
+  deleteOneToOneAction,
+  deleteReferralAction,
+  deleteTestimonialAction,
+  deleteThankYouAction,
+  deleteVisitorAction,
+  updateOwnReferralStatusAction,
+} from "@/lib/actions";
 import { currency } from "@/lib/utils";
 
 type MemberActivityData = Awaited<ReturnType<typeof import("@/lib/data").getMemberActivityData>>;
@@ -14,6 +24,8 @@ export function MemberActivityView({
   helperText,
   filterAction,
   selectedType = "all",
+  memberCanReviewReferrals = false,
+  adminManagePath,
 }: {
   data: MemberActivityData;
   heading: string;
@@ -22,6 +34,8 @@ export function MemberActivityView({
   helperText?: string;
   filterAction: string;
   selectedType?: ActivityType;
+  memberCanReviewReferrals?: boolean;
+  adminManagePath?: string;
 }) {
   const show = (type: Exclude<ActivityType, "all">) => selectedType === "all" || selectedType === type;
 
@@ -105,6 +119,25 @@ export function MemberActivityView({
               when: item.createdAt,
               title: `${item.counterparty.name} - ${item.leadName}`,
               detail: item.notes || item.leadContact || item.counterparty.businessName,
+              badge: referralStatusLabel(item.status),
+              badgeTone: referralStatusTone(item.status),
+              actions: adminManagePath ? (
+                <>
+                  <Link
+                    href={`/admin/referrals/${item.id}?from=${encodeURIComponent(adminManagePath)}`}
+                    className="secondaryButton compactButton"
+                  >
+                    Edit
+                  </Link>
+                  <form action={deleteReferralAction} className="inlineActionForm">
+                    <input type="hidden" name="referralId" value={item.id} />
+                    <input type="hidden" name="returnTo" value={adminManagePath} />
+                    <button className="dangerButton compactButton" type="submit">
+                      Delete
+                    </button>
+                  </form>
+                </>
+              ) : undefined,
             }))}
           />
         ) : null}
@@ -117,6 +150,23 @@ export function MemberActivityView({
               when: item.createdAt,
               title: `${item.counterparty.name} - ${currency(Number(item.amount))}`,
               detail: item.referral?.leadName ? `Referral: ${item.referral.leadName}` : item.notes || item.counterparty.businessName,
+              actions: adminManagePath ? (
+                <>
+                  <Link
+                    href={`/admin/thank-you/${item.id}?from=${encodeURIComponent(adminManagePath)}`}
+                    className="secondaryButton compactButton"
+                  >
+                    Edit
+                  </Link>
+                  <form action={deleteThankYouAction} className="inlineActionForm">
+                    <input type="hidden" name="thankYouId" value={item.id} />
+                    <input type="hidden" name="returnTo" value={adminManagePath} />
+                    <button className="dangerButton compactButton" type="submit">
+                      Delete
+                    </button>
+                  </form>
+                </>
+              ) : undefined,
             }))}
           />
         ) : null}
@@ -129,6 +179,15 @@ export function MemberActivityView({
               when: item.createdAt,
               title: `${item.toMember.name} - ${item.contactName}`,
               detail: item.contactCompany || item.notes || item.toMember.businessName,
+              actions: adminManagePath ? (
+                <form action={deleteIntroductionAction} className="inlineActionForm">
+                  <input type="hidden" name="introductionId" value={item.id} />
+                  <input type="hidden" name="returnTo" value={adminManagePath} />
+                  <button className="dangerButton compactButton" type="submit">
+                    Delete
+                  </button>
+                </form>
+              ) : undefined,
             }))}
           />
         ) : null}
@@ -141,6 +200,15 @@ export function MemberActivityView({
               when: item.createdAt,
               title: item.toMember.name,
               detail: item.notes || item.toMember.businessName,
+              actions: adminManagePath ? (
+                <form action={deleteTestimonialAction} className="inlineActionForm">
+                  <input type="hidden" name="testimonialId" value={item.id} />
+                  <input type="hidden" name="returnTo" value={adminManagePath} />
+                  <button className="dangerButton compactButton" type="submit">
+                    Delete
+                  </button>
+                </form>
+              ) : undefined,
             }))}
           />
         ) : null}
@@ -153,6 +221,15 @@ export function MemberActivityView({
               when: item.createdAt,
               title: item.visitorName,
               detail: `${item.visitorBusiness || "No business listed"} - meeting ${format(item.meeting.meetingDate, "dd MMM yyyy")}`,
+              actions: adminManagePath ? (
+                <form action={deleteVisitorAction} className="inlineActionForm">
+                  <input type="hidden" name="visitorId" value={item.id} />
+                  <input type="hidden" name="returnTo" value={adminManagePath} />
+                  <button className="dangerButton compactButton" type="submit">
+                    Delete
+                  </button>
+                </form>
+              ) : undefined,
             }))}
           />
         ) : null}
@@ -170,6 +247,38 @@ export function MemberActivityView({
               when: item.createdAt,
               title: `${item.fromMember.name} - ${item.leadName}`,
               detail: item.notes || item.leadContact || item.fromMember.businessName,
+              badge: referralStatusLabel(item.status),
+              badgeTone: referralStatusTone(item.status),
+              actions: (
+                <>
+                  {memberCanReviewReferrals && item.status !== "CONVERTED" ? (
+                    <form action={updateOwnReferralStatusAction} className="inlineActionForm">
+                      <input type="hidden" name="referralId" value={item.id} />
+                      <input type="hidden" name="status" value={item.status === "LOST" ? "GIVEN" : "LOST"} />
+                      <button className="secondaryButton compactButton" type="submit">
+                        {item.status === "LOST" ? "Mark live" : "Not proceeding"}
+                      </button>
+                    </form>
+                  ) : null}
+                  {adminManagePath ? (
+                    <>
+                      <Link
+                        href={`/admin/referrals/${item.id}?from=${encodeURIComponent(adminManagePath)}`}
+                        className="secondaryButton compactButton"
+                      >
+                        Edit
+                      </Link>
+                      <form action={deleteReferralAction} className="inlineActionForm">
+                        <input type="hidden" name="referralId" value={item.id} />
+                        <input type="hidden" name="returnTo" value={adminManagePath} />
+                        <button className="dangerButton compactButton" type="submit">
+                          Delete
+                        </button>
+                      </form>
+                    </>
+                  ) : null}
+                </>
+              ),
             }))}
           />
         ) : null}
@@ -182,6 +291,23 @@ export function MemberActivityView({
               when: item.createdAt,
               title: `${item.fromMember.name} - ${currency(Number(item.amount))}`,
               detail: item.referral?.leadName ? `Referral: ${item.referral.leadName}` : item.notes || item.fromMember.businessName,
+              actions: adminManagePath ? (
+                <>
+                  <Link
+                    href={`/admin/thank-you/${item.id}?from=${encodeURIComponent(adminManagePath)}`}
+                    className="secondaryButton compactButton"
+                  >
+                    Edit
+                  </Link>
+                  <form action={deleteThankYouAction} className="inlineActionForm">
+                    <input type="hidden" name="thankYouId" value={item.id} />
+                    <input type="hidden" name="returnTo" value={adminManagePath} />
+                    <button className="dangerButton compactButton" type="submit">
+                      Delete
+                    </button>
+                  </form>
+                </>
+              ) : undefined,
             }))}
           />
         ) : null}
@@ -194,6 +320,15 @@ export function MemberActivityView({
               when: item.createdAt,
               title: item.fromMember.name,
               detail: item.notes || item.fromMember.businessName,
+              actions: adminManagePath ? (
+                <form action={deleteTestimonialAction} className="inlineActionForm">
+                  <input type="hidden" name="testimonialId" value={item.id} />
+                  <input type="hidden" name="returnTo" value={adminManagePath} />
+                  <button className="dangerButton compactButton" type="submit">
+                    Delete
+                  </button>
+                </form>
+              ) : undefined,
             }))}
           />
         ) : null}
@@ -213,6 +348,15 @@ export function MemberActivityView({
                 when: item.meetingDate,
                 title: otherMember.name,
                 detail: `${otherMember.businessName} - ${format(item.meetingDate, "dd MMM yyyy")}`,
+                actions: adminManagePath ? (
+                  <form action={deleteOneToOneAction} className="inlineActionForm">
+                    <input type="hidden" name="oneToOneId" value={item.id} />
+                    <input type="hidden" name="returnTo" value={adminManagePath} />
+                    <button className="dangerButton compactButton" type="submit">
+                      Delete
+                    </button>
+                  </form>
+                ) : undefined,
               };
             })}
           />
@@ -233,7 +377,15 @@ function ActivityList({
 }: {
   title: string;
   empty: string;
-  items: Array<{ id: string; when: Date; title: string; detail?: string | null }>;
+  items: Array<{
+    id: string;
+    when: Date;
+    title: string;
+    detail?: string | null;
+    badge?: string;
+    badgeTone?: "live" | "success" | "muted";
+    actions?: ReactNode;
+  }>;
 }) {
   return (
     <div className="stack activityListBlock" style={{ gap: 10 }}>
@@ -243,8 +395,12 @@ function ActivityList({
           {items.map((item) => (
             <div key={item.id} className="listRow activityRow">
               <div className="activityMeta">{format(item.when, "dd MMM yyyy")}</div>
-              <div className="activityItemTitle" style={{ fontWeight: 700 }}>{item.title}</div>
+              <div className="activityTitleRow">
+                <div className="activityItemTitle" style={{ fontWeight: 700 }}>{item.title}</div>
+                {item.badge ? <span className={`activityBadge activityBadge${capitalize(item.badgeTone || "muted")}`}>{item.badge}</span> : null}
+              </div>
               {item.detail ? <div className="muted smallText">{item.detail}</div> : null}
+              {item.actions ? <div className="inlineActions activityRowActions">{item.actions}</div> : null}
             </div>
           ))}
         </div>
@@ -253,4 +409,30 @@ function ActivityList({
       )}
     </div>
   );
+}
+
+function referralStatusLabel(status: string) {
+  switch (status) {
+    case "CONVERTED":
+      return "Converted";
+    case "LOST":
+      return "Not proceeding";
+    default:
+      return "Live";
+  }
+}
+
+function referralStatusTone(status: string): "live" | "success" | "muted" {
+  switch (status) {
+    case "CONVERTED":
+      return "success";
+    case "LOST":
+      return "muted";
+    default:
+      return "live";
+  }
+}
+
+function capitalize(value: string) {
+  return value.charAt(0).toUpperCase() + value.slice(1);
 }

@@ -1,4 +1,5 @@
 import { AppShell } from "@/components/AppShell";
+import { Notice } from "@/components/Notice";
 import { MemberActivityView } from "@/components/activity/MemberActivityView";
 import { requireMember } from "@/lib/auth";
 import { getMemberActivityDataWithFilters } from "@/lib/data";
@@ -12,7 +13,13 @@ function parseDate(value?: string, endOfDay = false) {
 export default async function ActivityPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; type?: "all" | "referrals" | "thank-you" | "one-to-ones" | "visitors" | "testimonials" | "introductions" }>;
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    type?: "all" | "referrals" | "thank-you" | "one-to-ones" | "visitors" | "testimonials" | "introductions";
+    saved?: string;
+    error?: string;
+  }>;
 }) {
   const member = await requireMember();
   const params = await searchParams;
@@ -23,12 +30,16 @@ export default async function ActivityPage({
 
   return (
     <AppShell member={member}>
+      {params.saved === "referral-lost" ? <Notice tone="success">Referral marked as not proceeding.</Notice> : null}
+      {params.saved === "referral-live" ? <Notice tone="success">Referral marked as live again.</Notice> : null}
+      {params.error ? <Notice tone="error">{params.error}</Notice> : null}
       <MemberActivityView
         data={data}
         heading="My activity"
         helperText="Use this to check what you have passed, received, logged, and shared without asking leadership to dig through exports."
         filterAction="/activity"
         selectedType={params.type ?? "all"}
+        memberCanReviewReferrals
       />
     </AppShell>
   );

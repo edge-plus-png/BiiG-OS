@@ -444,6 +444,42 @@ button {
   overflow-wrap: anywhere;
 }
 
+.activityTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.activityBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 8px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.activityBadgeLive {
+  color: var(--brand);
+  background: #edf4ff;
+  border-color: #d7e6fb;
+}
+
+.activityBadgeSuccess {
+  color: #156f44;
+  background: #ebf9f1;
+  border-color: #cdeedb;
+}
+
+.activityBadgeMuted {
+  color: var(--text-muted);
+  background: #f3f5f8;
+  border-color: #e4e8ee;
+}
+
 .inlineLink {
   display: inline-flex;
   align-items: center;
@@ -475,6 +511,21 @@ button {
 
 .activityFilterActions > * {
   flex: 1 1 180px;
+}
+
+.inlineActionForm {
+  display: inline-flex;
+}
+
+.compactButton {
+  width: auto;
+  min-height: 38px;
+  padding: 8px 12px;
+  font-size: 0.92rem;
+}
+
+.activityRowActions {
+  margin-top: 2px;
 }
 
 .actionGrid {
